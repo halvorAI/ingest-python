@@ -1,0 +1,24 @@
+name: Publish to PyPI
+on:
+  release:
+    types: [published]
+  workflow_dispatch: # re-run a failed release without recreating it
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write # PyPI trusted publishing and attestations
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Check tag matches package version
+        if: github.event_name == 'release'
+        run: test "v$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)" = "${GITHUB_REF_NAME}"
+      - run: uv run --locked --extra dev pytest -q
+      - run: uv build
+      # Trusted publishing (OIDC), no token. Uploads PEP 740 attestations by default.
+      - uses: pypa/gh-action-pypi-publish@release/v1
