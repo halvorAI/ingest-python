@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from pathlib import Path
 
 from halvorai_ingest import HalvorClient, agent_context, verify_event
@@ -10,7 +11,7 @@ VECTOR = Path(__file__).resolve().parent / "fixtures" / "sign-vector.json"
 
 def test_emit_flush_sink_signs() -> None:
     data = json.loads(VECTOR.read_text(encoding="utf-8"))
-    envelopes: list[dict] = []
+    envelopes: list[dict[str, Any]] = []
     client = HalvorClient(
         source_key=data["private_jwk"],
         environment="test",
@@ -56,5 +57,5 @@ def test_emit_flush_sink_signs() -> None:
 
 def test_emit_never_throws() -> None:
     client = HalvorClient(source_key=None)
-    assert client.emit(None)  # type: ignore[arg-type]
-    assert client.emit("bad")  # type: ignore[arg-type]
+    assert client.emit(None)
+    assert client.emit("bad")
