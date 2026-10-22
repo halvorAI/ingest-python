@@ -1,6 +1,6 @@
 [project]
 name = "halvorai-ingest"
-version = "0.1.0"
+version = "0.2.0"
 description = "Signed, attributed payment events for AI agents. Never in the payment path."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping
-from urllib.parse import urljoin
 
 import httpx
 
@@ -16,10 +16,25 @@ from .hash import hash_instruction
 from .ids import new_event_id, now_utc
 from .redact import redact_deep, redact_text
 from .sign import sign_event
+from .validate import validate_event
 
-SDK_NAME = "halvorai-ingest@0.1.0"
+SDK_NAME = "halvorai-ingest@0.2.0"
 DEFAULT_BATCH = 100
-DEFAULT_ENDPOINT = "https://api.halvorai.com/v1/events"
+PRODUCTION_ENDPOINT = "https://api.halvorai.com"
+SANDBOX_ENDPOINT = "https://api.sandbox.halvorai.com"
+
+
+def default_endpoint(api_key: str | None, environment: str) -> str:
+    """Live keys (or environment='live' without a key) go to production; test keys to the sandbox."""
+    if api_key is not None:
+        return PRODUCTION_ENDPOINT if api_key.startswith("hk_live_") else SANDBOX_ENDPOINT
+    return PRODUCTION_ENDPOINT if environment == "live" else SANDBOX_ENDPOINT
+
+
+def events_url(endpoint: str) -> str:
+    """`endpoint` is a base URL, as in the TypeScript SDK; a full `/v1/events` URL is kept as is."""
+    base = endpoint.rstrip("/")
+    return base if base.endswith("/v1/events") else base + "/v1/events"
 
 
 @dataclass
@@ -27,8 +42,10 @@ class ClientStats:
     emitted: int = 0
     queued: int = 0
     accepted: int = 0
+    duplicates: int = 0
     rejected: int = 0
     dropped_invalid: int = 0
+    dropped_disabled: int = 0
     dropped_closed: int = 0
 
 
@@ -40,10 +57,13 @@ class HalvorClient:
     api_key: str | None = None
     source_key: str | Mapping[str, Any] | None = None
     environment: str = "test"
-    endpoint: str = DEFAULT_ENDPOINT
+    #: Base URL of the API. Defaults to HALVOR_ENDPOINT, else sandbox for test keys, production for live.
+    endpoint: str | None = None
     sink: SinkFn | None = None
     batch_size: int = DEFAULT_BATCH
     on_error: Callable[[dict[str, Any]], None] | None = None
+    #: For tests: an httpx transport (e.g. httpx.MockTransport).
+    transport: httpx.BaseTransport | None = None
 
     _queue: list[dict[str, Any]] = field(default_factory=list, init=False, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
@@ -53,6 +73,17 @@ class HalvorClient:
     _source_id: str = field(default="src_unknown", init=False, repr=False)
 
     def __post_init__(self) -> None:
+        # Like the TypeScript SDK, read keys from the environment (`init` writes them to .env.local).
+        if self.api_key is None:
+            self.api_key = os.environ.get("HALVOR_API_KEY") or None
+        if self.source_key is None:
+            self.source_key = os.environ.get("HALVOR_SOURCE_KEY") or None
+        if self.endpoint is None:
+            self.endpoint = os.environ.get("HALVOR_ENDPOINT") or default_endpoint(
+                self.api_key, self.environment
+            )
+        if self.api_key is not None and self.environment == "test" and self.api_key.startswith("hk_live_"):
+            self.environment = "live"
         self._source_jwk = self._parse_source_key(self.source_key)
         if self._source_jwk is not None:
             kid = self._source_jwk.get("kid")
@@ -107,6 +138,19 @@ class HalvorClient:
             ctx = current_context()
             built = self._build_event(cloned, ctx, event_id)
             self._redact_event(built)
+            problems = validate_event(built)
+            if problems:
+                self._stats.emitted += 1
+                self._stats.dropped_invalid += 1
+                self.notify(
+                    {
+                        "code": "invalid_event",
+                        "message": "event failed schema validation",
+                        "eventId": event_id,
+                        "details": problems,
+                    }
+                )
+                return event_id
             with self._lock:
                 self._queue.append(built)
                 self._stats.emitted += 1
@@ -247,13 +291,12 @@ class HalvorClient:
 
     def _deliver_http(self, envelopes: list[dict[str, Any]]) -> dict[str, bool]:
         if not self.api_key:
+            self._stats.dropped_disabled += len(envelopes)
             self.notify({"code": "config", "message": "api_key required for HTTP delivery"})
             return {"drained": False}
-        url = self.endpoint
-        if not url.endswith("/events") and not url.rstrip("/").endswith("events"):
-            url = urljoin(url.rstrip("/") + "/", "events")
+        url = events_url(self.endpoint or default_endpoint(self.api_key, self.environment))
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=30.0, transport=self.transport) as client:
                 res = client.post(
                     url,
                     json={"events": envelopes},
@@ -262,22 +305,57 @@ class HalvorClient:
                         "Content-Type": "application/json",
                     },
                 )
-            if res.status_code < 300:
-                self._stats.accepted += len(envelopes)
-                return {"drained": True}
-            self._stats.rejected += len(envelopes)
-            self.notify(
-                {
-                    "code": "rejected",
-                    "message": f"HTTP {res.status_code}",
-                    "serverCode": str(res.status_code),
-                }
-            )
-            return {"drained": False}
         except Exception as exc:
             self.notify({"code": "delivery_failed", "message": str(exc) or "http failed"})
             return {"drained": False}
+        if res.status_code >= 300:
+            self._stats.rejected += len(envelopes)
+            self.notify(
+                {
+                    "code": "unauthorized" if res.status_code in (401, 403) else "rejected",
+                    "message": f"HTTP {res.status_code}",
+                    "serverCode": _error_code(res) or str(res.status_code),
+                }
+            )
+            return {"drained": False}
+        self._apply_results(envelopes, res)
+        return {"drained": True}
+
+    def _apply_results(self, envelopes: list[dict[str, Any]], res: httpx.Response) -> None:
+        """Count each event by the status the API gave it, as the TypeScript SDK does."""
+        try:
+            results = res.json().get("results", [])
+        except Exception:
+            results = []
+        by_id = {r.get("id"): r for r in results if isinstance(r, dict)}
+        for envelope in envelopes:
+            event_id = envelope["event"].get("id")
+            result = by_id.get(event_id, {})
+            status = result.get("status", "accepted")
+            if status == "duplicate":
+                self._stats.duplicates += 1
+            elif status == "rejected":
+                self._stats.rejected += 1
+                error: dict[str, Any] = {
+                    "code": "rejected",
+                    "message": "server rejected event",
+                    "eventId": event_id,
+                }
+                server = result.get("error")
+                if isinstance(server, dict) and isinstance(server.get("code"), str):
+                    error["serverCode"] = server["code"]
+                self.notify(error)
+            else:
+                self._stats.accepted += 1
 
     def close(self) -> None:
         self._closed = True
         self.flush()
+
+
+def _error_code(res: httpx.Response) -> str | None:
+    try:
+        code = res.json().get("error", {}).get("code")
+    except Exception:
+        return None
+    return code if isinstance(code, str) else None
