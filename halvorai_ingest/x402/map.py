@@ -1,96 +1,150 @@
-"""Map x402 v2 HTTP payloads to partial APE events (parity with TS adapter)."""
+"""Map x402 v2 HTTP payloads to partial APE events, the same way as the Node.js SDK.
+
+Rules from ape-schema `docs/MAPPINGS.md` §5.1:
+- `payment.requested` has `payment_id` `x402:<network>:requested:<event id>`, so every challenge
+  is its own payment request.
+- every later stage uses `x402:<network>:<nonce>`, never the transaction hash, so authorization,
+  settlement and failure join. The authorized event links to its challenge with
+  `related.previous_event_id`.
+- a missing network or asset is never guessed: the mapper raises and the adapter reports
+  `invalid_event` instead of recording a testnet or a zero address.
+"""
 
 from __future__ import annotations
 
 from typing import Any, Mapping
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 from ..context import current_context
 from ..hash import evidence_sha256
+from ..ids import new_event_id
+
+
+def _str(value: Any) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
 
 
 def _host(url: str | None) -> str | None:
+    """Host and port, like `URL.host` in Node.js."""
     if not url:
         return None
     try:
-        return urlparse(url).hostname
-    except Exception:
+        return urlsplit(url).netloc or None
+    except ValueError:
         return None
 
 
 def _attribution(payer_wallet: str | None = None) -> dict[str, Any]:
+    """Agent and owner, but only when `agent_context` did not set them.
+
+    When it did, they are left out so the client fills the full context (name, framework,
+    country, KYC reference) when the event is emitted.
+    """
     ctx = current_context()
-    agent_id = (ctx or {}).get("agent", {}).get("id") if ctx else None
-    owner = (ctx or {}).get("owner") if ctx else None
-    return {
-        "agent": {"id": agent_id or payer_wallet or "unattributed"},
-        "owner": {
-            "id": (owner or {}).get("id") if isinstance(owner, Mapping) else "unattributed",
-            "type": (owner or {}).get("type") if isinstance(owner, Mapping) else "business",
-        },
-    }
+    out: dict[str, Any] = {}
+    if not ctx or not ctx.get("agent"):
+        out["agent"] = {"id": payer_wallet or "unattributed"}
+    if not ctx or not ctx.get("owner"):
+        out["owner"] = {"id": "unattributed", "type": "business"}
+    return out
 
 
 def _asset(accept: Mapping[str, Any]) -> dict[str, Any]:
-    raw_extra = accept.get("extra")
-    extra: Mapping[str, Any] = raw_extra if isinstance(raw_extra, Mapping) else {}
-    return {
-        "network": accept.get("network") or "eip155:84532",
-        "address": accept.get("asset") or "0x0000000000000000000000000000000000000000",
-        "symbol": extra.get("name") or "USDC",
-        "decimals": extra.get("decimals") if isinstance(extra.get("decimals"), int) else 6,
-    }
+    network = _str(accept.get("network"))
+    if network is None:
+        raise ValueError("x402 payment requirement has no network; event not recorded")
+    address = _str(accept.get("asset"))
+    if address is None:
+        raise ValueError("x402 payment requirement has no asset; event not recorded")
+    asset: dict[str, Any] = {"network": network, "address": address}
+    extra = _mapping(accept.get("extra"))
+    if isinstance(extra.get("name"), str):
+        asset["symbol"] = extra["name"][:16]
+    decimals = extra.get("decimals")
+    if isinstance(decimals, int) and not isinstance(decimals, bool):
+        asset["decimals"] = decimals
+    return asset
 
 
 def _amount(accept: Mapping[str, Any], override: str | None = None) -> dict[str, Any]:
-    return {
-        "value": override or accept.get("amount") or "0",
-        "unit": "atomic",
-        "asset": _asset(accept),
-    }
+    return {"value": override or _str(accept.get("amount")) or "0", "unit": "atomic", "asset": _asset(accept)}
+
+
+def _payee(
+    accept: Mapping[str, Any],
+    resource: Mapping[str, Any] | None,
+    override: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    if override is not None:
+        return dict(override)
+    res = _mapping(resource)
+    url = _str(res.get("url"))
+    name = _str(res.get("serviceName")) or _str(res.get("description")) or _host(url)
+    payee: dict[str, Any] = {"type": "api_provider" if url is not None else "wallet"}
+    if name is not None:
+        payee["name"] = name[:256]
+    if url is not None:
+        payee["resource_url"] = url
+    pay_to = _str(accept.get("payTo"))
+    network = _str(accept.get("network"))
+    if pay_to is not None and network is not None:
+        payee["wallet"] = {"network": network, "address": pay_to}
+    if "name" not in payee and "wallet" not in payee:
+        payee["name"] = "x402 payee"
+    return payee
+
+
+def _rail_ref(accept: Mapping[str, Any], extra: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    ref: dict[str, Any] = {}
+    if isinstance(accept.get("scheme"), str):
+        ref["scheme"] = accept["scheme"]
+    if isinstance(accept.get("network"), str):
+        ref["network"] = accept["network"]
+    flow = _mapping(accept.get("extra")).get("paymentFlow")
+    if isinstance(flow, str):
+        ref["payment_flow"] = flow
+    if extra:
+        ref.update(extra)
+    return ref
+
+
+def _description(payment: dict[str, Any], resource: Mapping[str, Any] | None) -> None:
+    description = _str(_mapping(resource).get("description"))
+    if description is not None:
+        payment["description"] = description[:256]
 
 
 def map_payment_required(
     required: Mapping[str, Any],
     adapter: str = "x402-client",
+    payee_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     accepts = required.get("accepts")
-    if not isinstance(accepts, list) or not accepts:
+    if not isinstance(accepts, list) or not accepts or not isinstance(accepts[0], Mapping):
         return None
-    accept = accepts[0]
-    if not isinstance(accept, Mapping):
-        return None
-    raw_resource = required.get("resource")
-    resource: Mapping[str, Any] = raw_resource if isinstance(raw_resource, Mapping) else {}
-    attr = _attribution()
-    network = accept.get("network") or "eip155:84532"
-    payment_id = f"x402:{network}:challenge"
-    payee: dict[str, Any] = {"type": "api_provider"}
-    name = resource.get("serviceName") or resource.get("description") or _host(
-        resource.get("url") if isinstance(resource.get("url"), str) else None
-    )
-    if isinstance(name, str):
-        payee["name"] = name[:256]
-    url = resource.get("url")
-    if isinstance(url, str):
-        payee["resource_url"] = url
-    if isinstance(accept.get("payTo"), str) and isinstance(accept.get("network"), str):
-        payee["wallet"] = {"network": accept["network"], "address": accept["payTo"]}
+    accept: Mapping[str, Any] = accepts[0]
+    resource = _mapping(required.get("resource"))
+    event_id = new_event_id()
+    network = _str(accept.get("network")) or "unknown"
+    payment: dict[str, Any] = {
+        "payment_id": f"x402:{network}:requested:{event_id}",
+        "rail": "x402",
+        "amount": _amount(accept),
+        "status": "requested",
+        "rail_ref": _rail_ref(accept),
+    }
+    _description(payment, resource)
     return {
+        "id": event_id,
         "type": "payment.requested",
         "source": {"adapter": adapter},
-        **attr,
-        "payment": {
-            "payment_id": payment_id,
-            "rail": "x402",
-            "amount": _amount(accept),
-            "status": "requested",
-            "rail_ref": {
-                "scheme": accept.get("scheme") or "exact",
-                "network": network,
-            },
-        },
-        "payee": payee,
+        **_attribution(),
+        "payment": payment,
+        "payee": _payee(accept, resource, payee_override),
         "evidence": [],
     }
 
@@ -98,49 +152,42 @@ def map_payment_required(
 def map_payment_payload(
     payload: Mapping[str, Any],
     adapter: str = "x402-client",
+    payee_override: Mapping[str, Any] | None = None,
+    *,
+    previous_event_id: str | None = None,
 ) -> dict[str, Any] | None:
     accepted = payload.get("accepted")
     if not isinstance(accepted, Mapping):
         return None
-    auth = {}
-    inner = payload.get("payload")
-    if isinstance(inner, Mapping) and isinstance(inner.get("authorization"), Mapping):
-        auth = inner["authorization"]
-    attr = _attribution(auth.get("from") if isinstance(auth.get("from"), str) else None)
-    network = accepted.get("network") or "eip155:84532"
-    nonce = auth.get("nonce") if isinstance(auth.get("nonce"), str) else "unknown"
+    auth = _mapping(_mapping(payload.get("payload")).get("authorization"))
+    nonce = _str(auth.get("nonce")) or "unknown"
+    network = _str(accepted.get("network")) or "unknown"
+    payer = _str(auth.get("from"))
+    payment: dict[str, Any] = {
+        "payment_id": f"x402:{network}:{nonce}",
+        "rail": "x402",
+        "amount": _amount(accepted, _str(auth.get("value"))),
+        "status": "authorized",
+        "rail_ref": _rail_ref(accepted, {"nonce": nonce}),
+    }
+    resource = _mapping(payload.get("resource"))
+    _description(payment, resource)
     value = dict(payload)
-    return {
+    mapped: dict[str, Any] = {
         "type": "payment.authorized",
         "source": {"adapter": adapter},
-        **attr,
-        "payment": {
-            "payment_id": f"x402:{network}:{nonce}",
-            "rail": "x402",
-            "amount": _amount(accepted, auth.get("value") if isinstance(auth.get("value"), str) else None),
-            "status": "authorized",
-            "rail_ref": {
-                "scheme": accepted.get("scheme") or "exact",
-                "network": network,
-                "nonce": nonce,
-            },
-        },
-        "payee": {
-            "type": "wallet",
-            "wallet": {
-                "network": network,
-                "address": auth.get("to") or accepted.get("payTo") or "0x0",
-            },
-        },
+        **_attribution(payer),
+        "payment": payment,
+        "payee": _payee(accepted, resource, payee_override),
         "evidence": [
-            {
-                "kind": "x402.payment_payload",
-                "format": "json",
-                "value": value,
-                "sha256": evidence_sha256(value),
-            }
+            {"kind": "x402.payment_payload", "format": "json", "value": value, "sha256": evidence_sha256(value)}
         ],
     }
+    if payer is not None and isinstance(accepted.get("network"), str):
+        mapped["instrument"] = {"type": "wallet", "wallet": {"network": accepted["network"], "address": payer}}
+    if previous_event_id is not None:
+        mapped["related"] = {"previous_event_id": previous_event_id}
+    return mapped
 
 
 def map_settlement_response(
@@ -149,52 +196,47 @@ def map_settlement_response(
     accept: Mapping[str, Any] | None = None,
     nonce: str | None = None,
     resource: Mapping[str, Any] | None = None,
+    payee_override: Mapping[str, Any] | None = None,
     adapter: str = "x402-client",
 ) -> dict[str, Any] | None:
+    merged: dict[str, Any] = {"scheme": "exact"}
+    if accept is not None:
+        merged.update(dict(accept))
+    else:
+        if isinstance(settlement.get("network"), str):
+            merged["network"] = settlement["network"]
+        if isinstance(settlement.get("amount"), str):
+            merged["amount"] = settlement["amount"]
+    network = _str(settlement.get("network")) or _str(merged.get("network")) or "unknown"
     success = settlement.get("success") is True
-    network = settlement.get("network") or (accept or {}).get("network") or "eip155:84532"
-    tx = settlement.get("transaction") if isinstance(settlement.get("transaction"), str) else "unknown"
-    attr = _attribution(
-        settlement.get("payer") if isinstance(settlement.get("payer"), str) else None
-    )
-    accept_m = accept or {}
-    amount_override = (
-        settlement.get("amount") if isinstance(settlement.get("amount"), str) else None
-    )
+    payer = _str(settlement.get("payer"))
+    extra: dict[str, Any] = {}
+    if nonce is not None:
+        extra["nonce"] = nonce
+    tx = _str(settlement.get("transaction"))
+    if tx:
+        extra["tx_hash"] = tx
     payment: dict[str, Any] = {
-        "payment_id": f"x402:{network}:{tx}",
+        "payment_id": f"x402:{network}:{nonce or 'unknown'}",
         "rail": "x402",
-        "amount": _amount(accept_m, amount_override),
+        "amount": _amount(merged, _str(settlement.get("amount")) or _str(merged.get("amount"))),
         "status": "settled" if success else "failed",
-        "rail_ref": {
-            "scheme": accept_m.get("scheme") or "exact",
-            "network": network,
-            "tx_hash": tx,
-        },
+        "rail_ref": _rail_ref(merged, extra),
     }
-    if nonce:
-        payment["rail_ref"]["nonce"] = nonce
     if not success:
-        payment["failure_reason"] = settlement.get("errorReason") or "settlement_failed"
-    payee: dict[str, Any] = {"type": "api_provider"}
-    if resource and isinstance(resource.get("url"), str):
-        payee["resource_url"] = resource["url"]
-        host = _host(resource["url"])
-        if host:
-            payee["name"] = host
+        payment["failure_reason"] = (_str(settlement.get("errorReason")) or "settlement_failed")[:128]
+    _description(payment, resource)
     value = dict(settlement)
-    return {
+    mapped: dict[str, Any] = {
         "type": "payment.settled" if success else "payment.failed",
         "source": {"adapter": adapter},
-        **attr,
+        **_attribution(payer),
         "payment": payment,
-        "payee": payee,
+        "payee": _payee(merged, resource, payee_override),
         "evidence": [
-            {
-                "kind": "x402.settlement",
-                "format": "json",
-                "value": value,
-                "sha256": evidence_sha256(value),
-            }
+            {"kind": "x402.settlement", "format": "json", "value": value, "sha256": evidence_sha256(value)}
         ],
     }
+    if payer is not None and network != "unknown":
+        mapped["instrument"] = {"type": "wallet", "wallet": {"network": network, "address": payer}}
+    return mapped

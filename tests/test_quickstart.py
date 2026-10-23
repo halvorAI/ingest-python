@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib.metadata import version
 from typing import Any
 
 from halvorai_ingest import HalvorClient, agent_context, generate_source_key, verify_event
@@ -35,7 +36,7 @@ def test_offline_quickstart_round_trip() -> None:
 
     assert len(envelopes) == 1
     event = envelopes[0]["event"]
-    assert event["source"] == {"id": "src_local", "sdk": "halvorai-ingest@0.2.0", "adapter": "custom"}
+    assert event["source"] == {"id": "src_local", "sdk": f"halvorai-ingest@{version('halvorai-ingest')}", "adapter": "custom"}
     assert event["agent"]["id"] == "agt_travel_12"
     assert "text" not in event["instruction"]
     assert event["instruction"]["hash"].startswith("sha256:")

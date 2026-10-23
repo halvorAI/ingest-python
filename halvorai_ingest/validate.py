@@ -60,6 +60,17 @@ RefValue = Union[Annotated[str, StringConstraints(strict=True)], Annotated[int, 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _no_nulls(cls, data: Any) -> Any:
+        # The JSON Schema has no nullable fields: an optional field is left out, never null.
+        if isinstance(data, Mapping):
+            nulls = [k for k, v in data.items() if v is None]
+            if nulls:
+                raise ValueError(f"null is not allowed for {', '.join(map(str, nulls))}; leave the field out")
+        return data
+
+
 
 class Source(_Strict):
     id: S64
@@ -344,7 +355,10 @@ class ApeEvent(_Strict):
             self.agent.name,
             self.owner.display_name,
             self.payee.name,
-            *((self.labels or {}).values()),
+            self.payee.website,
+            self.payee.resource_url,
+            *(self.labels or {}).keys(),
+            *(self.labels or {}).values(),
         ]
         if any(t is not None and contains_pan(t) for t in texts):
             raise ValueError("pan_detected")

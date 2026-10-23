@@ -48,10 +48,10 @@ with agent_context(
         }
     )
 
-halvor.flush()
+halvor.flush(timeout=5)
 ```
 
-`emit` returns at once and never raises. Instruction text is hashed on your machine and never sent. Anyone with the public half of the key (the JWK without `d`) can check an envelope with `verify_event(envelope["event"], envelope["sig"], public_key)`.
+`emit` returns at once and never raises; a background thread signs and sends events. Instruction text is hashed on your machine and never sent. Anyone with the public half of the key (the JWK without `d`) can check an envelope with `verify_event(envelope["event"], envelope["sig"], public_key)`.
 
 ## Send to HalvorAI (early access)
 
@@ -68,19 +68,42 @@ halvor = HalvorClient(
 )
 ```
 
-Call `halvor.close()` before your process exits so queued events are sent.
+## Delivery
+
+- Events are sent every `flush_interval` seconds (default 1), or sooner when a batch of `batch_size` is full.
+- Network errors, 408, 425, 429 and 5xx are retried with backoff (`retry_delays`, default 1, 2, 4, 8, 16, 32 s). Permanent errors (400, 401, 403, 404, 405, 409, 410, 415, 422) are not retried; the batch is reported through `on_error` with the API's `serverCode` and `requestId`.
+- Pass `spool_dir` to keep batches that could not be delivered on disk. The next `flush()` or process replays them. Rejected batches go to `<spool_dir>/dead/`. Limits: `spool_max_bytes` (50 MB) and `spool_max_age` (7 days), oldest first.
+- `stats()` returns counts: `emitted`, `accepted`, `duplicates`, `rejected`, `dropped`, `retries`, `spooled`, `replayed`, and the `dropped_*` reasons.
+
+Long-running processes need nothing else: queued events are flushed at exit (up to 2 s). In a short-lived script, a serverless handler or a worker task, flush before you return:
+
+```python
+result = halvor.flush(timeout=5)   # {"drained": True} when everything was handled
+```
+
+Or use the client as a context manager, which closes it on exit:
+
+```python
+with HalvorClient() as halvor:
+    ...
+```
 
 ## x402
 
-Wrap the `httpx` client your agent pays with. Payment requirements, signed payment payloads and settlement responses become events:
+Put the HalvorAI transport under the `httpx` client your agent pays with. Payment requirements, signed payment payloads and settlement responses become events. Headers are only read; nothing in the payment path changes.
 
 ```python
 import httpx
 
-from halvorai_ingest.x402 import wrap_httpx
+from halvorai_ingest.x402 import AsyncHalvorX402Transport, HalvorX402Transport
 
-client = wrap_httpx(httpx.Client(), halvor)
+client = httpx.Client(transport=HalvorX402Transport(halvor))
+async_client = httpx.AsyncClient(transport=AsyncHalvorX402Transport(halvor))
 ```
+
+To keep a custom transport, pass it as `inner`: `HalvorX402Transport(halvor, inner=my_transport)`. If you already have a client object, `wrap_httpx(client, halvor)` and `wrap_httpx_async(client, halvor)` observe every method except `stream()`.
+
+Each 402 challenge becomes a `payment.requested` event. The payment that answers it becomes `payment.authorized`, linked to the challenge with `related.previous_event_id`, and the settlement becomes `payment.settled` or `payment.failed` with the same `payment_id`. A challenge without a network or token address is reported as `invalid_event` and not recorded.
 
 Stripe, MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github.com/halvorAI/ingest-js). Guides for each: [docs.halvorai.com](https://docs.halvorai.com).
 
