@@ -2,6 +2,7 @@
 
 from .client import ClientStats, HalvorClient
 from .context import agent_context, current_context
+from .init import InitResult, run_init
 from .hash import evidence_sha256, hash_instruction
 from .redact import redact_deep, redact_text
 from .sign import generate_source_key, sign_event, verify_event
@@ -21,4 +22,6 @@ __all__ = [
     "generate_source_key",
     "sign_event",
     "verify_event",
+    "run_init",
+    "InitResult",
 ]

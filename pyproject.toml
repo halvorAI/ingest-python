@@ -1,6 +1,6 @@
 [project]
 name = "halvorai-ingest"
-version = "0.3.0"
+version = "0.4.0"
 description = "Signed, attributed payment events for AI agents. Never in the payment path."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -29,6 +29,9 @@ dependencies = [
   "pydantic>=2.10.0",
   "rfc8785>=0.1.4",
 ]
+
+[project.scripts]
+halvorai-ingest = "halvorai_ingest.cli:main"
 
 [project.urls]
 Homepage = "https://halvorai.com"
