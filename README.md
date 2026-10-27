@@ -55,7 +55,15 @@ halvor.flush(timeout=5)
 
 ## Send to HalvorAI (early access)
 
-With a sandbox key (`hk_test_…`) and a source key registered in the dashboard:
+With a sandbox key (`hk_test_…`), register this machine as a source. `init` creates an Ed25519 key here, registers its public half, writes `HALVOR_API_KEY` and `HALVOR_SOURCE_KEY` to `.env.local`, sends one test event and prints a dashboard link:
+
+```bash
+halvorai-ingest init            # or: python -m halvorai_ingest init
+```
+
+It asks for the key unless `--api-key` or `HALVOR_API_KEY` is set. Other options: `--endpoint`, `--name`, `--cwd`, `--dashboard`. The private key never leaves your machine; keep it in your secret manager.
+
+Then load `.env.local` (or set the same variables) and create the client:
 
 ```python
 import os

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `halvorai-ingest init` (also `python -m halvorai_ingest init`) and `run_init()`: generate a source key, register it with `POST /v1/sources`, write `.env.local` and send a test event, as `npx @halvorai/ingest init` does. Python users no longer need Node.js to connect to HalvorAI.
+
 ## 0.2.0 (unreleased)
 
 ### Breaking

@@ -30,6 +30,9 @@ dependencies = [
   "rfc8785>=0.1.4",
 ]
 
+[project.scripts]
+halvorai-ingest = "halvorai_ingest.cli:main"
+
 [project.urls]
 Homepage = "https://halvorai.com"
 Documentation = "https://docs.halvorai.com"
