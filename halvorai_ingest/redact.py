@@ -16,7 +16,8 @@ CVC = re.compile(
     r"\b(cvc|cvv2?|security code)(\"\s*:\s*\"|\s*[:=]\s*|\s+)(\d{3,4})(\")?",
     re.IGNORECASE,
 )
-PAN_RUN = re.compile(r"\d(?:[ -]?\d)*")
+# Digits glued to letters or more digits (hex signatures, base64, ids) are not a card number.
+PAN_RUN = re.compile(r"(?<![0-9A-Za-z])\d(?:[ -]?\d)*(?![0-9A-Za-z])")
 
 MAX_DEPTH = 64
 

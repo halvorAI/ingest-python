@@ -302,7 +302,8 @@ Labels = Annotated[dict[S64, S256], Field(max_length=20)]
 
 def contains_pan(text: str) -> bool:
     """True when text holds a Luhn-valid run of 13 to 19 digits (spaces or dashes allowed)."""
-    for run in re.findall(r"\d(?:[ -]?\d)*", text):
+    # Same boundaries as the redaction: digits glued to letters (hex, base64, ids) are not a card.
+    for run in re.findall(r"(?<![0-9A-Za-z])\d(?:[ -]?\d)*(?![0-9A-Za-z])", text):
         digits = re.sub(r"[ -]", "", run)
         if 13 <= len(digits) <= 19 and _luhn(digits):
             return True
