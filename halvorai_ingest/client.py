@@ -67,6 +67,10 @@ def events_url(endpoint: str) -> str:
     return base if base.endswith("/v1/events") else base + "/v1/events"
 
 
+# JSON evidence that carries a signature over its own fields, so redaction would break it.
+SIGNED_JSON_EVIDENCE = frozenset({"x402.payment_payload"})
+
+
 @dataclass
 class ClientStats:
     emitted: int = 0
@@ -414,6 +418,9 @@ class HalvorClient:
         evidence = event.get("evidence")
         if isinstance(evidence, list):
             for item in evidence:
+                # A signed x402 payload is evidence only while byte-identical.
+                if isinstance(item, dict) and item.get("kind") in SIGNED_JSON_EVIDENCE:
+                    continue
                 if isinstance(item, dict) and item.get("format") == "json" and "value" in item:
                     item["value"] = redact_deep(item["value"])
                     item["sha256"] = evidence_sha256(item["value"])

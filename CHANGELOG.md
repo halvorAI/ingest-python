@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+### Fixed
+
+- Card-number redaction and the card-number check skip digit runs inside hex, base64 and ids, and `x402.payment_payload` evidence is no longer redacted. Parts of x402 signatures could be replaced with `[redacted:pan]`, which then failed verification and raised a false `evidence_invalid` alert.
+
 ## 0.4.0
 
 ### Added

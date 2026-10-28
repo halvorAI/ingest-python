@@ -15,3 +15,16 @@ def test_redacts_secret_key() -> None:
 def test_redacts_cvc() -> None:
     assert "[redacted:cvc]" in redact_text("cvc: 123")
     assert "[redacted:cvc]" in redact_text('"cvc":"999"')
+
+
+def test_leaves_digit_runs_inside_hex_base64_and_ids_alone() -> None:
+    for text in (
+        "0x9632e1311996ebcb38d7a4242424242424242b5beb14f513",
+        "c2lnbmF0dXJl4242424242424242AAA=",
+        "ord_4242424242424242x",
+    ):
+        assert redact_text(text) == text
+
+
+def test_still_finds_a_card_number_in_a_url_path() -> None:
+    assert redact_text("https://api.example/r/4242424242424242") == "https://api.example/r/[redacted:pan]"
