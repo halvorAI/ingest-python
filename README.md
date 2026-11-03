@@ -115,6 +115,61 @@ Each 402 challenge becomes a `payment.requested` event. The payment that answers
 
 Stripe, MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github.com/halvorAI/ingest-js). Guides for each: [docs.halvorai.com](https://docs.halvorai.com).
 
+## Mobile apps (Flutter)
+
+Apps built with [`halvorai_ingest_flutter`](https://github.com/halvorAI/ingest-dart) sign events on the phone, with a key that each install makes for itself. The app never holds your API key. Your backend registers each install's public key and forwards its signed batches; `halvorai_ingest.device` provides both. With FastAPI:
+
+```python
+from fastapi import FastAPI, Request, Response
+
+from halvorai_ingest.device import (
+    DeviceRequestError,
+    forward_envelopes_async,
+    register_device_source_async,
+)
+
+app = FastAPI()
+UNAUTHORIZED = b'{"error":{"code":"unauthorized","message":"sign in first"}}'
+
+
+@app.post("/halvor/sources")  # the app's provisionUrl
+async def halvor_sources(request: Request) -> Response:
+    user = await current_user(request)  # your own session check
+    if user is None:
+        return Response(UNAUTHORIZED, status_code=401, media_type="application/json")
+    body = await request.json()
+    try:
+        source_id = await register_device_source_async(body.get("public_jwk"), name=body.get("name"))
+    except DeviceRequestError as exc:
+        return Response(exc.body(), status_code=exc.status, media_type="application/json")
+    return Response(f'{{"source_id":"{source_id}"}}', media_type="application/json")
+
+
+@app.post("/halvor/events")  # the app's forwardUrl
+async def halvor_events(request: Request) -> Response:
+    user = await current_user(request)
+    if user is None:
+        return Response(UNAUTHORIZED, status_code=401, media_type="application/json")
+    out = await forward_envelopes_async(await request.body(), expected_owner_id=user.id)
+    return Response(out.body, status_code=out.status, media_type=out.content_type)
+```
+
+Both functions read `HALVOR_API_KEY` (and `HALVOR_ENDPOINT`) from the environment, or take `api_key=`. Sync versions without `_async` work the same way in Flask or Django.
+
+What they do:
+
+- **`register_device_source`** accepts only the public half of an Ed25519 key, refusing a key with `d`. It registers the key with `POST /v1/sources` and returns the `src_` id.
+- **`forward_envelopes`**:
+  - Checks that every event's `owner.id` is the signed-in user and its `environment` is the key's.
+  - Sends the request body to `POST /v1/events` **byte for byte**, never a parsed and re-serialized copy, so the device's signatures stay valid.
+  - Returns HalvorAI's status and body unchanged, which the app reads its per-event results from.
+- **Status codes tell the app what to do:**
+  - 401 or 403 means "try later": the app keeps the batch on disk and retries.
+  - 400, 413 and 422 are permanent: the app drops the batch, or splits it on 413.
+  - 502 means HalvorAI couldn't be reached, and the app retries.
+
+Set the signed-in user as `owner` in the app's agent context; events without it are refused.
+
 ## Develop
 
 ```bash

@@ -13,6 +13,7 @@ from urllib.parse import quote, urlsplit
 import httpx
 
 from .client import API_KEY_PATTERN, HalvorClient, default_endpoint
+from .sources import post_source
 from .sign import generate_source_key
 
 DASHBOARD_URL = "https://app.halvorai.com"
@@ -67,22 +68,6 @@ def upsert_env_file(path: Path, values: dict[str, str]) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _register_source(
-    http: httpx.Client, endpoint: str, api_key: str, name: str, public_jwk: dict[str, str]
-) -> str:
-    res = http.post(
-        f"{endpoint}/v1/sources",
-        json={"name": name, "adapter": "custom", "public_jwk": public_jwk},
-        headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
-    )
-    if res.status_code != 201:
-        raise RuntimeError(f"POST /v1/sources failed ({res.status_code}): {res.text or res.reason_phrase}")
-    source_id = res.json().get("id")
-    if not isinstance(source_id, str) or not source_id.startswith("src_"):
-        raise RuntimeError("POST /v1/sources returned no source id")
-    return source_id
-
-
 def run_init(
     api_key: str,
     *,
@@ -110,7 +95,7 @@ def run_init(
 
     log(f"Registering source at {base}…")
     with httpx.Client(timeout=30.0, transport=transport) as http:
-        source_id = _register_source(http, base, api_key, source_name, public_jwk)
+        source_id = post_source(http, base, api_key, source_name, public_jwk)
     private_jwk["kid"] = source_id
 
     env_path = Path(cwd).resolve() / ".env.local"
