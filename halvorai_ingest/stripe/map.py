@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from ..hash import evidence_sha256, hash_instruction
+from ..text import cut
 
 STRIPE_HANDLED_TYPES: tuple[str, ...] = (
     "payment_intent.amount_capturable_updated",
@@ -96,9 +97,9 @@ def _attribution(meta: Mapping[str, str]) -> dict[str, Any]:
     name = meta.get("halvor_agent_name")
     framework = meta.get("halvor_agent_framework")
     if name:
-        agent["name"] = name[:128]
+        agent["name"] = cut(name, 128)
     if framework:
-        agent["framework"] = framework[:64]
+        agent["framework"] = cut(framework, 64)
     out: dict[str, Any] = {
         "agent": agent,
         "owner": {
@@ -120,7 +121,7 @@ def _payee_from_connect(obj: Mapping[str, Any]) -> dict[str, Any]:
         return {"type": "merchant", "id": destination}
     description = _str(obj.get("description"))
     if description is not None:
-        return {"type": "merchant", "name": description[:256]}
+        return {"type": "merchant", "name": cut(description, 256)}
     return {"type": "merchant", "name": "Stripe merchant"}
 
 
@@ -155,9 +156,11 @@ def _evidence(obj: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _shared_payment_token(obj: Mapping[str, Any]) -> str | None:
     meta = _metadata(obj)
-    return meta.get("shared_payment_token") or meta.get("halvor_shared_payment_token") or _str(
-        obj.get("shared_payment_token")
-    )
+    # `is None` checks, like the Node.js `??`: an empty token in metadata is kept, as there.
+    for key in ("shared_payment_token", "halvor_shared_payment_token"):
+        if meta.get(key) is not None:
+            return meta[key]
+    return _str(obj.get("shared_payment_token"))
 
 
 def _finish(
@@ -199,11 +202,11 @@ def _payment_intent(event: Mapping[str, Any], obj: dict[str, Any], etype: str, s
     }
     description = _str(obj.get("description"))
     if description is not None:
-        payment["description"] = description[:256]
+        payment["description"] = cut(description, 256)
     if status == "failed":
         err = _as_dict(obj.get("last_payment_error"))
         code = _str(err.get("code")) if err else None
-        payment["failure_reason"] = (code or "payment_failed")[:128]
+        payment["failure_reason"] = cut(code or "payment_failed", 128)
     spt = _shared_payment_token(obj)
     if spt is not None:
         rail_ref["shared_payment_token"] = spt
@@ -234,7 +237,7 @@ def _charge_refunded(event: Mapping[str, Any], obj: dict[str, Any]) -> dict[str,
     }
     description = _str(obj.get("description"))
     if description is not None:
-        payment["description"] = description[:256]
+        payment["description"] = cut(description, 256)
     attr = _attribution(_metadata(obj))
     return _finish(event, "payment.refunded", "stripe", attr, payment, _payee_from_connect(obj), obj)
 
@@ -257,7 +260,7 @@ def _dispute(event: Mapping[str, Any], obj: dict[str, Any]) -> dict[str, Any]:
     }
     reason = _str(obj.get("reason"))
     if reason is not None:
-        payment["description"] = reason[:256]
+        payment["description"] = cut(reason, 256)
     attr = _attribution(_metadata(obj))
     payee = {"type": "merchant", "name": "Stripe dispute"}
     return _finish(event, "payment.disputed", "stripe", attr, payment, payee, obj)
@@ -269,7 +272,7 @@ def _card_payment(payment: dict[str, Any], merchant: Mapping[str, Any]) -> None:
         payment["category"] = f"mcc:{mcc}"
     name = _str(merchant.get("name"))
     if name is not None:
-        payment["description"] = name[:256]
+        payment["description"] = cut(name, 256)
 
 
 def _issuing_authorization(event: Mapping[str, Any], obj: dict[str, Any], failed: bool) -> dict[str, Any]:

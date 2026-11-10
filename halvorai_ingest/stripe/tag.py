@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal, Mapping
 
 from ..context import current_context
+from ..text import cut
 
 
 def _merge(
@@ -34,9 +35,9 @@ def _merge(
         meta["halvor_agent_id"] = agent_id
     # Cut to the APE limits, which also keeps them inside Stripe's 500-character metadata values.
     if agent_name is not None:
-        meta["halvor_agent_name"] = agent_name[:128]
+        meta["halvor_agent_name"] = cut(agent_name, 128)
     if framework is not None:
-        meta["halvor_agent_framework"] = framework[:64]
+        meta["halvor_agent_framework"] = cut(framework, 64)
     if owner_id is not None:
         meta["halvor_owner_id"] = owner_id
     if owner_type is not None:

@@ -193,3 +193,35 @@ def test_tagged_card_round_trips_to_a_named_agent() -> None:
     assert mapped is not None
     assert mapped["agent"] == {"id": "agt_rt", "name": "Round trip", "framework": "fw"}
     assert mapped["owner"] == {"id": "own_rt", "type": "person"}
+
+
+@pytest.mark.parametrize("case", ["case:emoji-names", "case:empty-spt"])
+def test_matches_the_node_sdk_for_emoji_and_empty_values(case: str) -> None:
+    assert map_stripe_event(EXPECTED[case]["input"]) == EXPECTED[case]["output"]
+    sent: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    client = client_with(sent, errors)
+    client.stripe(EXPECTED[case]["input"])
+    client.flush(timeout=5)
+    client.close()
+    assert errors == []
+    assert len(sent) == 1
+
+
+def test_tag_cuts_by_utf16_units_like_the_node_sdk() -> None:
+    case = EXPECTED["tag:emoji"]
+    assert tag_issuing_card({}, **case["overrides"])["metadata"] == case["output"]
+
+
+def test_emoji_names_fit_the_api_limit_and_sign() -> None:
+    event = load("issuing_authorization.created.json")
+    event["data"]["object"]["card"]["metadata"]["halvor_agent_name"] = "a" * 127 + "🚀"
+    sent: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    client = client_with(sent, errors)
+    client.stripe(event)
+    client.flush(timeout=5)
+    client.close()
+    assert errors == []
+    # 127 + 2 units would be 129, so the rocket is dropped rather than split in half.
+    assert sent[0]["event"]["agent"]["name"] == "a" * 127
