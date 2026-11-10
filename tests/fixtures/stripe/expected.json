@@ -842,5 +842,236 @@
         "type": "stripe_spt"
       }
     }
+  },
+  "case:emoji-names": {
+    "input": {
+      "id": "evt_1IA_created",
+      "type": "issuing_authorization.created",
+      "created": 1729161600,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "iauth_1QxYz2AbCdEfGh",
+          "object": "issuing.authorization",
+          "amount": 41200,
+          "currency": "usd",
+          "approved": true,
+          "status": "pending",
+          "merchant_data": {
+            "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789",
+            "url": "https://example-airways.com"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "halvor_agent_name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀🚀🚀",
+              "halvor_agent_framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.authorized",
+      "source": {
+        "adapter": "stripe-issuing"
+      },
+      "agent": {
+        "id": "agt_travel_12",
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀",
+        "framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "iauth_1QxYz2AbCdEfGh",
+        "rail": "card",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "authorized",
+        "rail_ref": {
+          "authorization_id": "iauth_1QxYz2AbCdEfGh",
+          "processor": "stripe-issuing"
+        },
+        "category": "mcc:4511",
+        "description": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 "
+      },
+      "payee": {
+        "type": "merchant",
+        "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+        "id": "acq_000123456789",
+        "country": "US",
+        "mcc": "4511",
+        "website": "https://example-airways.com"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "iauth_1QxYz2AbCdEfGh",
+            "object": "issuing.authorization",
+            "amount": 41200,
+            "currency": "usd",
+            "approved": true,
+            "status": "pending",
+            "merchant_data": {
+              "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+              "category_code": "4511",
+              "country": "US",
+              "network_id": "acq_000123456789",
+              "url": "https://example-airways.com"
+            },
+            "card": {
+              "id": "ic_1QxCard",
+              "last4": "4242",
+              "brand": "visa",
+              "metadata": {
+                "halvor_agent_id": "agt_travel_12",
+                "halvor_owner_id": "own_u_4410",
+                "halvor_owner_type": "person",
+                "halvor_instruction_id": "ins_8890",
+                "halvor_agent_name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀🚀🚀",
+                "halvor_agent_framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+              }
+            }
+          },
+          "sha256": "sha256:567251658e038142ab1212cc0470581bbda19b5f1a7c0f987a6af4cf4ad680b5"
+        }
+      ],
+      "occurred_at": "2024-10-17T10:40:00.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "card",
+        "issuer": "Stripe Issuing",
+        "last4": "4242",
+        "network": "visa"
+      }
+    }
+  },
+  "case:empty-spt": {
+    "input": {
+      "id": "evt_1PI_succeeded",
+      "type": "payment_intent.succeeded",
+      "created": 1729165212,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "pi_3QxAbCdEfGhIjKlM",
+          "object": "payment_intent",
+          "amount": 41200,
+          "currency": "usd",
+          "description": "Return flight SFO-AUS",
+          "status": "succeeded",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person",
+            "halvor_instruction_id": "ins_8890",
+            "shared_payment_token": ""
+          },
+          "on_behalf_of": "acct_1Nw0rTh",
+          "transfer_data": {
+            "destination": "acct_1Nw0rTh"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.settled",
+      "source": {
+        "adapter": "stripe"
+      },
+      "agent": {
+        "id": "agt_travel_12"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "pi_3QxAbCdEfGhIjKlM",
+        "rail": "stripe",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "settled",
+        "rail_ref": {
+          "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+          "shared_payment_token": "",
+          "account": "acct_1Nw0rTh"
+        },
+        "description": "Return flight SFO-AUS"
+      },
+      "payee": {
+        "type": "merchant",
+        "id": "acct_1Nw0rTh"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "pi_3QxAbCdEfGhIjKlM",
+            "object": "payment_intent",
+            "amount": 41200,
+            "currency": "usd",
+            "description": "Return flight SFO-AUS",
+            "status": "succeeded",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "shared_payment_token": ""
+            },
+            "on_behalf_of": "acct_1Nw0rTh",
+            "transfer_data": {
+              "destination": "acct_1Nw0rTh"
+            }
+          },
+          "sha256": "sha256:d5a2c3691024c4857b8be87df29e1bc6384c728105f7e3e4d225554b7e9976f6"
+        }
+      ],
+      "occurred_at": "2024-10-17T11:40:12.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "stripe_spt"
+      }
+    }
+  },
+  "tag:emoji": {
+    "overrides": {
+      "agent_id": "agt_e",
+      "agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "framework": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+    },
+    "output": {
+      "halvor_agent_id": "agt_e",
+      "halvor_agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "halvor_agent_framework": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+    }
   }
 }

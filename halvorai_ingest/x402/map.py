@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 from ..context import current_context
 from ..hash import evidence_sha256
+from ..text import cut
 from ..ids import new_event_id
 
 
@@ -63,7 +64,7 @@ def _asset(accept: Mapping[str, Any]) -> dict[str, Any]:
     asset: dict[str, Any] = {"network": network, "address": address}
     extra = _mapping(accept.get("extra"))
     if isinstance(extra.get("name"), str):
-        asset["symbol"] = extra["name"][:16]
+        asset["symbol"] = cut(extra["name"], 16)
     decimals = extra.get("decimals")
     if isinstance(decimals, int) and not isinstance(decimals, bool):
         asset["decimals"] = decimals
@@ -86,7 +87,7 @@ def _payee(
     name = _str(res.get("serviceName")) or _str(res.get("description")) or _host(url)
     payee: dict[str, Any] = {"type": "api_provider" if url is not None else "wallet"}
     if name is not None:
-        payee["name"] = name[:256]
+        payee["name"] = cut(name, 256)
     if url is not None:
         payee["resource_url"] = url
     pay_to = _str(accept.get("payTo"))
@@ -115,7 +116,7 @@ def _rail_ref(accept: Mapping[str, Any], extra: Mapping[str, Any] | None = None)
 def _description(payment: dict[str, Any], resource: Mapping[str, Any] | None) -> None:
     description = _str(_mapping(resource).get("description"))
     if description is not None:
-        payment["description"] = description[:256]
+        payment["description"] = cut(description, 256)
 
 
 def map_payment_required(
@@ -224,7 +225,7 @@ def map_settlement_response(
         "rail_ref": _rail_ref(merged, extra),
     }
     if not success:
-        payment["failure_reason"] = (_str(settlement.get("errorReason")) or "settlement_failed")[:128]
+        payment["failure_reason"] = cut(_str(settlement.get("errorReason")) or "settlement_failed", 128)
     _description(payment, resource)
     value = dict(settlement)
     mapped: dict[str, Any] = {
