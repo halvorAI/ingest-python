@@ -113,7 +113,29 @@ To keep a custom transport, pass it as `inner`: `HalvorX402Transport(halvor, inn
 
 Each 402 challenge becomes a `payment.requested` event. The payment that answers it becomes `payment.authorized`, linked to the challenge with `related.previous_event_id`, and the settlement becomes `payment.settled` or `payment.failed` with the same `payment_id`. A challenge without a network or token address is reported as `invalid_event` and not recorded.
 
-Stripe, MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github.com/halvorAI/ingest-js). Guides for each: [docs.halvorai.com](https://docs.halvorai.com).
+## Stripe
+
+Pass each verified Stripe webhook event to `halvor.stripe(event)`. PaymentIntents, refunds and disputes are recorded on the `stripe` rail. Stripe Issuing authorizations and transactions are recorded on the `card` rail. Any other event type returns `None` and is ignored. The adapter does not import the Stripe library, and it accepts a plain dict or a `stripe.Event`.
+
+```python
+import stripe
+
+from halvorai_ingest import agent_context
+from halvorai_ingest.stripe import tag_issuing_card, tag_payment_intent
+
+# Tag what the agent creates, so its webhooks map back to the agent, owner and instruction.
+with agent_context(agent={"id": "agt_travel_12", "name": "Travel agent"}, owner={"id": "own_4410", "type": "business"}):
+    card = stripe.issuing.Card.create(**tag_issuing_card({"cardholder": "ich_...", "currency": "usd", "type": "virtual"}))
+    intent = stripe.PaymentIntent.create(**tag_payment_intent({"amount": 41200, "currency": "usd"}))
+
+# In your webhook endpoint, after Stripe's own signature check:
+event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+halvor.stripe(event)
+```
+
+The tags are `metadata.halvor_*` keys, taken from `agent_context` or from keyword overrides (`agent_id`, `agent_name`, `framework`, `owner_id`, `owner_type`, `instruction_id`). Put them on the card for Issuing: card webhooks carry no other agent name. An event without tags is recorded as `unattributed`. `map_stripe_event(event)` returns the event without queuing it. The mapping is the same as in the Node.js and Go SDKs.
+
+MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github.com/halvorAI/ingest-js). Guides for each: [docs.halvorai.com](https://docs.halvorai.com).
 
 ## Develop
 

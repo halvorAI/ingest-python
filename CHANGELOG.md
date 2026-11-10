@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- Stripe adapter, `halvorai_ingest.stripe`, matching the Node.js and Go SDKs. `halvor.stripe(event)` maps a verified Stripe webhook event and queues it. PaymentIntent, refund and dispute events go on the `stripe` rail. Issuing authorization and transaction events go on the `card` rail. `map_stripe_event`, `stripe_webhook_handler` and `STRIPE_HANDLED_TYPES` are also exported. The adapter does not depend on the Stripe library.
+- `tag_payment_intent` and `tag_issuing_card` write `metadata.halvor_*` from `agent_context` or from keyword overrides. These keys are agent id, name and framework, owner id and type, and instruction id. The name is cut to 128 characters and the framework to 64, so card payments show the agent's name. For the same webhook, the mapping gives the same event as `@halvorai/ingest/stripe`; the tests check this against the Node.js output for every shared fixture.
+
 ## 0.4.1
 
 ### Fixed
