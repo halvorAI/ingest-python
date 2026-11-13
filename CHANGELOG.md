@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+
+- `halvorai_ingest.device`, the backend half of mobile apps built with `halvorai_ingest_flutter`, whose installs sign their own events:
+  - `register_device_source` registers an install's public Ed25519 key (a key with `d` is refused).
+  - `forward_envelopes` checks each event's owner and environment, then passes the batch to `POST /v1/events` byte for byte and returns HalvorAI's answer unchanged.
+  - Both have `_async` versions for FastAPI and other async frameworks. Same behaviour as `@halvorai/ingest/device` 0.4.0.
+
+### Changed
+
+- `init` registers its source through the same code. A refused registration still raises `RuntimeError` (now `SourceRegistrationError`, a subclass), and a network failure says `POST /v1/sources failed: <reason>`.
+
 ## 0.5.0
 
 ### Added
