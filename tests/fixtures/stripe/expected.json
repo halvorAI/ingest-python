@@ -1,0 +1,1077 @@
+{
+  "charge.dispute.created.json": {
+    "type": "payment.disputed",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "pi_3QxAbCdEfGhIjKlM",
+      "rail": "stripe",
+      "amount": {
+        "value": "41200",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "disputed",
+      "rail_ref": {
+        "dispute": "dp_1QxDispute",
+        "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+        "charge": "ch_3QxRefunded"
+      },
+      "description": "fraudulent"
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Stripe dispute"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "dp_1QxDispute",
+          "object": "dispute",
+          "amount": 41200,
+          "currency": "usd",
+          "reason": "fraudulent",
+          "charge": "ch_3QxRefunded",
+          "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person"
+          }
+        },
+        "sha256": "sha256:542163d27ecbb620079506fd96361165de86b2828fe63bf0b0fedfa221e64429"
+      }
+    ],
+    "occurred_at": "2024-10-17T12:26:40.000Z"
+  },
+  "charge.refunded.json": {
+    "type": "payment.refunded",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "pi_3QxAbCdEfGhIjKlM",
+      "rail": "stripe",
+      "amount": {
+        "value": "41200",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "refunded",
+      "rail_ref": {
+        "charge": "ch_3QxRefunded",
+        "payment_intent": "pi_3QxAbCdEfGhIjKlM"
+      },
+      "description": "Return flight SFO-AUS"
+    },
+    "payee": {
+      "type": "merchant",
+      "id": "acct_1Nw0rTh"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "ch_3QxRefunded",
+          "object": "charge",
+          "amount": 41200,
+          "amount_refunded": 41200,
+          "currency": "usd",
+          "description": "Return flight SFO-AUS",
+          "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+          "refunded": true,
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person"
+          },
+          "on_behalf_of": "acct_1Nw0rTh"
+        },
+        "sha256": "sha256:e61b7766aa72c71a2e1b69b458ee00b499b098eb70b80d9d5093009f0f2e9fa1"
+      }
+    ],
+    "occurred_at": "2024-10-17T12:10:00.000Z"
+  },
+  "issuing_authorization.created.json": {
+    "type": "payment.authorized",
+    "source": {
+      "adapter": "stripe-issuing"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "iauth_1QxYz2AbCdEfGh",
+      "rail": "card",
+      "amount": {
+        "value": "41200",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "authorized",
+      "rail_ref": {
+        "authorization_id": "iauth_1QxYz2AbCdEfGh",
+        "processor": "stripe-issuing"
+      },
+      "category": "mcc:4511",
+      "description": "Example Airways"
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Example Airways",
+      "id": "acq_000123456789",
+      "country": "US",
+      "mcc": "4511",
+      "website": "https://example-airways.com"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "iauth_1QxYz2AbCdEfGh",
+          "object": "issuing.authorization",
+          "amount": 41200,
+          "currency": "usd",
+          "approved": true,
+          "status": "pending",
+          "merchant_data": {
+            "name": "Example Airways",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789",
+            "url": "https://example-airways.com"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890"
+            }
+          }
+        },
+        "sha256": "sha256:3d2c0d268ac048982978e286241642f6275aad04c5a1ebd9d8f7a32b9b46e47c"
+      }
+    ],
+    "occurred_at": "2024-10-17T10:40:00.000Z",
+    "instruction": {
+      "id": "ins_8890",
+      "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+    },
+    "instrument": {
+      "type": "card",
+      "issuer": "Stripe Issuing",
+      "last4": "4242",
+      "network": "visa"
+    }
+  },
+  "issuing_authorization.updated.json": {
+    "type": "payment.failed",
+    "source": {
+      "adapter": "stripe-issuing"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "iauth_1QxDeclined",
+      "rail": "card",
+      "amount": {
+        "value": "9900",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "failed",
+      "rail_ref": {
+        "authorization_id": "iauth_1QxDeclined",
+        "processor": "stripe-issuing"
+      },
+      "failure_reason": "issuing_authorization_declined",
+      "category": "mcc:7995",
+      "description": "Blocked Merchant"
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Blocked Merchant",
+      "id": "acq_blocked",
+      "country": "US",
+      "mcc": "7995"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "iauth_1QxDeclined",
+          "object": "issuing.authorization",
+          "amount": 9900,
+          "currency": "usd",
+          "approved": false,
+          "status": "closed",
+          "merchant_data": {
+            "name": "Blocked Merchant",
+            "category_code": "7995",
+            "country": "US",
+            "network_id": "acq_blocked"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person"
+            }
+          }
+        },
+        "sha256": "sha256:70d923c0cf1fecb61d863d578a1e9d81dfdceaeb34cc51e0ff6d3c629f9ef982"
+      }
+    ],
+    "occurred_at": "2024-10-17T10:41:00.000Z",
+    "instrument": {
+      "type": "card",
+      "issuer": "Stripe Issuing",
+      "last4": "4242",
+      "network": "visa"
+    }
+  },
+  "issuing_transaction.created.json": {
+    "type": "payment.settled",
+    "source": {
+      "adapter": "stripe-issuing"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "ipi_1QxCapture",
+      "rail": "card",
+      "amount": {
+        "value": "41200",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "settled",
+      "rail_ref": {
+        "transaction_id": "ipi_1QxCapture",
+        "processor": "stripe-issuing",
+        "authorization_id": "iauth_1QxYz2AbCdEfGh"
+      },
+      "category": "mcc:4511",
+      "description": "Example Airways"
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Example Airways",
+      "id": "acq_000123456789",
+      "country": "US",
+      "mcc": "4511"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "ipi_1QxCapture",
+          "object": "issuing.transaction",
+          "amount": -41200,
+          "currency": "usd",
+          "type": "capture",
+          "authorization": "iauth_1QxYz2AbCdEfGh",
+          "merchant_data": {
+            "name": "Example Airways",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person"
+            }
+          }
+        },
+        "sha256": "sha256:49e4a6cca5c0ec7025356ffbc6aa684ce275f83148b8ced78a8d9e59a42cd47c"
+      }
+    ],
+    "occurred_at": "2024-10-17T10:50:00.000Z"
+  },
+  "issuing_transaction.refund.json": {
+    "type": "payment.refunded",
+    "source": {
+      "adapter": "stripe-issuing"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "ipi_1QxRefund",
+      "rail": "card",
+      "amount": {
+        "value": "5000",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "refunded",
+      "rail_ref": {
+        "transaction_id": "ipi_1QxRefund",
+        "processor": "stripe-issuing"
+      },
+      "category": "mcc:4511",
+      "description": "Example Airways"
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Example Airways",
+      "id": "acq_000123456789",
+      "country": "US",
+      "mcc": "4511"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "ipi_1QxRefund",
+          "object": "issuing.transaction",
+          "amount": 5000,
+          "currency": "usd",
+          "type": "refund",
+          "merchant_data": {
+            "name": "Example Airways",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person"
+            }
+          }
+        },
+        "sha256": "sha256:93c46228abd859ca4337b70841c82338cf5ffb1ca07250d45064a550442f4a3e"
+      }
+    ],
+    "occurred_at": "2024-10-17T11:03:20.000Z"
+  },
+  "payment_intent.amount_capturable_updated.json": {
+    "type": "payment.authorized",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "pi_3QxAuthHold",
+      "rail": "stripe",
+      "amount": {
+        "value": "5000",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "authorized",
+      "rail_ref": {
+        "payment_intent": "pi_3QxAuthHold"
+      }
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Stripe merchant"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "pi_3QxAuthHold",
+          "object": "payment_intent",
+          "amount": 5000,
+          "currency": "usd",
+          "status": "requires_capture",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person"
+          }
+        },
+        "sha256": "sha256:0ba163f9399be1d784c93ac41fa041a05698e272c5f12cd96f92069a5669e6a0"
+      }
+    ],
+    "occurred_at": "2024-10-17T11:36:40.000Z"
+  },
+  "payment_intent.payment_failed.json": {
+    "type": "payment.failed",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "agt_procure_03"
+    },
+    "owner": {
+      "id": "own_acme_ltd",
+      "type": "business"
+    },
+    "payment": {
+      "payment_id": "pi_3QxFailCardDeclined",
+      "rail": "stripe",
+      "amount": {
+        "value": "230000",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "failed",
+      "rail_ref": {
+        "payment_intent": "pi_3QxFailCardDeclined",
+        "account": "acct_1Nw0rTh"
+      },
+      "description": "Northwind Office Supply",
+      "failure_reason": "card_declined"
+    },
+    "payee": {
+      "type": "merchant",
+      "id": "acct_1Nw0rTh"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "pi_3QxFailCardDeclined",
+          "object": "payment_intent",
+          "amount": 230000,
+          "currency": "usd",
+          "description": "Northwind Office Supply",
+          "status": "requires_payment_method",
+          "last_payment_error": {
+            "code": "card_declined",
+            "message": "Your card was declined."
+          },
+          "metadata": {
+            "halvor_agent_id": "agt_procure_03",
+            "halvor_owner_id": "own_acme_ltd"
+          },
+          "on_behalf_of": "acct_1Nw0rTh"
+        },
+        "sha256": "sha256:aff5e0397ad01568cffe874a076f690cc767c7d49b98c6489f27dc98335c2d10"
+      }
+    ],
+    "occurred_at": "2024-10-17T12:00:12.000Z"
+  },
+  "payment_intent.succeeded.json": {
+    "type": "payment.settled",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "agt_travel_12"
+    },
+    "owner": {
+      "id": "own_u_4410",
+      "type": "person"
+    },
+    "payment": {
+      "payment_id": "pi_3QxAbCdEfGhIjKlM",
+      "rail": "stripe",
+      "amount": {
+        "value": "41200",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "settled",
+      "rail_ref": {
+        "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+        "shared_payment_token": "spt_1QxNoPqRsTuV",
+        "account": "acct_1Nw0rTh"
+      },
+      "description": "Return flight SFO-AUS"
+    },
+    "payee": {
+      "type": "merchant",
+      "id": "acct_1Nw0rTh"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "pi_3QxAbCdEfGhIjKlM",
+          "object": "payment_intent",
+          "amount": 41200,
+          "currency": "usd",
+          "description": "Return flight SFO-AUS",
+          "status": "succeeded",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person",
+            "halvor_instruction_id": "ins_8890",
+            "shared_payment_token": "spt_1QxNoPqRsTuV"
+          },
+          "on_behalf_of": "acct_1Nw0rTh",
+          "transfer_data": {
+            "destination": "acct_1Nw0rTh"
+          }
+        },
+        "sha256": "sha256:cc578dd0725b385d749ce7816525c1aca36d05e2a7629089bd3c219eea84394f"
+      }
+    ],
+    "occurred_at": "2024-10-17T11:40:12.000Z",
+    "instruction": {
+      "id": "ins_8890",
+      "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+    },
+    "instrument": {
+      "type": "stripe_spt"
+    }
+  },
+  "unattributed.json": {
+    "type": "payment.settled",
+    "source": {
+      "adapter": "stripe"
+    },
+    "agent": {
+      "id": "unattributed"
+    },
+    "owner": {
+      "id": "unattributed",
+      "type": "business"
+    },
+    "payment": {
+      "payment_id": "pi_3QxNoMeta",
+      "rail": "stripe",
+      "amount": {
+        "value": "100",
+        "unit": "minor",
+        "currency": "USD"
+      },
+      "status": "settled",
+      "rail_ref": {
+        "payment_intent": "pi_3QxNoMeta"
+      }
+    },
+    "payee": {
+      "type": "merchant",
+      "name": "Stripe merchant"
+    },
+    "evidence": [
+      {
+        "kind": "stripe.object",
+        "format": "json",
+        "value": {
+          "id": "pi_3QxNoMeta",
+          "object": "payment_intent",
+          "amount": 100,
+          "currency": "usd",
+          "status": "succeeded",
+          "metadata": {}
+        },
+        "sha256": "sha256:ad600225b2e8e350da3b094a9aca984c39a920e08aa2298916be848f89f0e374"
+      }
+    ],
+    "occurred_at": "2024-10-17T12:43:20.000Z"
+  },
+  "case:named-card": {
+    "input": {
+      "id": "evt_1IA_created",
+      "type": "issuing_authorization.created",
+      "created": 1729161600,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "iauth_1QxYz2AbCdEfGh",
+          "object": "issuing.authorization",
+          "amount": 41200,
+          "currency": "usd",
+          "approved": true,
+          "status": "pending",
+          "merchant_data": {
+            "name": "Example Airways",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789",
+            "url": "https://example-airways.com"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "halvor_agent_name": "Travel booking agent",
+              "halvor_agent_framework": "errandly-agents"
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.authorized",
+      "source": {
+        "adapter": "stripe-issuing"
+      },
+      "agent": {
+        "id": "agt_travel_12",
+        "name": "Travel booking agent",
+        "framework": "errandly-agents"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "iauth_1QxYz2AbCdEfGh",
+        "rail": "card",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "authorized",
+        "rail_ref": {
+          "authorization_id": "iauth_1QxYz2AbCdEfGh",
+          "processor": "stripe-issuing"
+        },
+        "category": "mcc:4511",
+        "description": "Example Airways"
+      },
+      "payee": {
+        "type": "merchant",
+        "name": "Example Airways",
+        "id": "acq_000123456789",
+        "country": "US",
+        "mcc": "4511",
+        "website": "https://example-airways.com"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "iauth_1QxYz2AbCdEfGh",
+            "object": "issuing.authorization",
+            "amount": 41200,
+            "currency": "usd",
+            "approved": true,
+            "status": "pending",
+            "merchant_data": {
+              "name": "Example Airways",
+              "category_code": "4511",
+              "country": "US",
+              "network_id": "acq_000123456789",
+              "url": "https://example-airways.com"
+            },
+            "card": {
+              "id": "ic_1QxCard",
+              "last4": "4242",
+              "brand": "visa",
+              "metadata": {
+                "halvor_agent_id": "agt_travel_12",
+                "halvor_owner_id": "own_u_4410",
+                "halvor_owner_type": "person",
+                "halvor_instruction_id": "ins_8890",
+                "halvor_agent_name": "Travel booking agent",
+                "halvor_agent_framework": "errandly-agents"
+              }
+            }
+          },
+          "sha256": "sha256:1a0e41f151651f1fe2f3b672da623c10aaa1a4801085a6d0eaf3e053697ecf73"
+        }
+      ],
+      "occurred_at": "2024-10-17T10:40:00.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "card",
+        "issuer": "Stripe Issuing",
+        "last4": "4242",
+        "network": "visa"
+      }
+    }
+  },
+  "case:connect-spt": {
+    "input": {
+      "id": "evt_1PI_succeeded",
+      "type": "payment_intent.succeeded",
+      "created": 1729165212,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "pi_3QxAbCdEfGhIjKlM",
+          "object": "payment_intent",
+          "amount": 41200,
+          "currency": "us",
+          "description": "Return flight SFO-AUS",
+          "status": "succeeded",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person",
+            "halvor_instruction_id": "ins_8890",
+            "shared_payment_token": "spt_123",
+            "halvor_agent_name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "on_behalf_of": "acct_1Dest",
+          "transfer_data": {
+            "destination": "acct_1Dest"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.settled",
+      "source": {
+        "adapter": "stripe"
+      },
+      "agent": {
+        "id": "agt_travel_12",
+        "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "pi_3QxAbCdEfGhIjKlM",
+        "rail": "stripe",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "settled",
+        "rail_ref": {
+          "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+          "shared_payment_token": "spt_123",
+          "account": "acct_1Dest"
+        },
+        "description": "Return flight SFO-AUS"
+      },
+      "payee": {
+        "type": "merchant",
+        "id": "acct_1Dest"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "pi_3QxAbCdEfGhIjKlM",
+            "object": "payment_intent",
+            "amount": 41200,
+            "currency": "us",
+            "description": "Return flight SFO-AUS",
+            "status": "succeeded",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "shared_payment_token": "spt_123",
+              "halvor_agent_name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            },
+            "on_behalf_of": "acct_1Dest",
+            "transfer_data": {
+              "destination": "acct_1Dest"
+            }
+          },
+          "sha256": "sha256:11860d1d40b183b73165b591fb9debbb88e7247c92630a69862fe60f4beab51a"
+        }
+      ],
+      "occurred_at": "2024-10-17T11:40:12.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "stripe_spt"
+      }
+    }
+  },
+  "case:emoji-names": {
+    "input": {
+      "id": "evt_1IA_created",
+      "type": "issuing_authorization.created",
+      "created": 1729161600,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "iauth_1QxYz2AbCdEfGh",
+          "object": "issuing.authorization",
+          "amount": 41200,
+          "currency": "usd",
+          "approved": true,
+          "status": "pending",
+          "merchant_data": {
+            "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+            "category_code": "4511",
+            "country": "US",
+            "network_id": "acq_000123456789",
+            "url": "https://example-airways.com"
+          },
+          "card": {
+            "id": "ic_1QxCard",
+            "last4": "4242",
+            "brand": "visa",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "halvor_agent_name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀🚀🚀",
+              "halvor_agent_framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.authorized",
+      "source": {
+        "adapter": "stripe-issuing"
+      },
+      "agent": {
+        "id": "agt_travel_12",
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀",
+        "framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "iauth_1QxYz2AbCdEfGh",
+        "rail": "card",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "authorized",
+        "rail_ref": {
+          "authorization_id": "iauth_1QxYz2AbCdEfGh",
+          "processor": "stripe-issuing"
+        },
+        "category": "mcc:4511",
+        "description": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 "
+      },
+      "payee": {
+        "type": "merchant",
+        "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+        "id": "acq_000123456789",
+        "country": "US",
+        "mcc": "4511",
+        "website": "https://example-airways.com"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "iauth_1QxYz2AbCdEfGh",
+            "object": "issuing.authorization",
+            "amount": 41200,
+            "currency": "usd",
+            "approved": true,
+            "status": "pending",
+            "merchant_data": {
+              "name": "Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 Café 🛫 ",
+              "category_code": "4511",
+              "country": "US",
+              "network_id": "acq_000123456789",
+              "url": "https://example-airways.com"
+            },
+            "card": {
+              "id": "ic_1QxCard",
+              "last4": "4242",
+              "brand": "visa",
+              "metadata": {
+                "halvor_agent_id": "agt_travel_12",
+                "halvor_owner_id": "own_u_4410",
+                "halvor_owner_type": "person",
+                "halvor_instruction_id": "ins_8890",
+                "halvor_agent_name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🚀🚀🚀",
+                "halvor_agent_framework": "🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠🧠"
+              }
+            }
+          },
+          "sha256": "sha256:567251658e038142ab1212cc0470581bbda19b5f1a7c0f987a6af4cf4ad680b5"
+        }
+      ],
+      "occurred_at": "2024-10-17T10:40:00.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "card",
+        "issuer": "Stripe Issuing",
+        "last4": "4242",
+        "network": "visa"
+      }
+    }
+  },
+  "case:empty-spt": {
+    "input": {
+      "id": "evt_1PI_succeeded",
+      "type": "payment_intent.succeeded",
+      "created": 1729165212,
+      "livemode": false,
+      "data": {
+        "object": {
+          "id": "pi_3QxAbCdEfGhIjKlM",
+          "object": "payment_intent",
+          "amount": 41200,
+          "currency": "usd",
+          "description": "Return flight SFO-AUS",
+          "status": "succeeded",
+          "metadata": {
+            "halvor_agent_id": "agt_travel_12",
+            "halvor_owner_id": "own_u_4410",
+            "halvor_owner_type": "person",
+            "halvor_instruction_id": "ins_8890",
+            "shared_payment_token": ""
+          },
+          "on_behalf_of": "acct_1Nw0rTh",
+          "transfer_data": {
+            "destination": "acct_1Nw0rTh"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "payment.settled",
+      "source": {
+        "adapter": "stripe"
+      },
+      "agent": {
+        "id": "agt_travel_12"
+      },
+      "owner": {
+        "id": "own_u_4410",
+        "type": "person"
+      },
+      "payment": {
+        "payment_id": "pi_3QxAbCdEfGhIjKlM",
+        "rail": "stripe",
+        "amount": {
+          "value": "41200",
+          "unit": "minor",
+          "currency": "USD"
+        },
+        "status": "settled",
+        "rail_ref": {
+          "payment_intent": "pi_3QxAbCdEfGhIjKlM",
+          "shared_payment_token": "",
+          "account": "acct_1Nw0rTh"
+        },
+        "description": "Return flight SFO-AUS"
+      },
+      "payee": {
+        "type": "merchant",
+        "id": "acct_1Nw0rTh"
+      },
+      "evidence": [
+        {
+          "kind": "stripe.object",
+          "format": "json",
+          "value": {
+            "id": "pi_3QxAbCdEfGhIjKlM",
+            "object": "payment_intent",
+            "amount": 41200,
+            "currency": "usd",
+            "description": "Return flight SFO-AUS",
+            "status": "succeeded",
+            "metadata": {
+              "halvor_agent_id": "agt_travel_12",
+              "halvor_owner_id": "own_u_4410",
+              "halvor_owner_type": "person",
+              "halvor_instruction_id": "ins_8890",
+              "shared_payment_token": ""
+            },
+            "on_behalf_of": "acct_1Nw0rTh",
+            "transfer_data": {
+              "destination": "acct_1Nw0rTh"
+            }
+          },
+          "sha256": "sha256:d5a2c3691024c4857b8be87df29e1bc6384c728105f7e3e4d225554b7e9976f6"
+        }
+      ],
+      "occurred_at": "2024-10-17T11:40:12.000Z",
+      "instruction": {
+        "id": "ins_8890",
+        "hash": "sha256:dbcbe4f4a4fe28f78818c73b81468cc094d14add4dd09ba8ab6b1d24b0494bcb"
+      },
+      "instrument": {
+        "type": "stripe_spt"
+      }
+    }
+  },
+  "tag:emoji": {
+    "overrides": {
+      "agent_id": "agt_e",
+      "agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "framework": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+    },
+    "output": {
+      "halvor_agent_id": "agt_e",
+      "halvor_agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "halvor_agent_framework": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+    }
+  }
+}

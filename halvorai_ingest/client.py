@@ -268,6 +268,21 @@ class HalvorClient:
             self.notify({"code": "invalid_event", "message": str(exc) or "emit failed", "eventId": event_id})
             return event_id
 
+    def stripe(self, event: Any) -> str | None:
+        """
+        Map a Stripe webhook event (after your own signature check) and queue it. Returns the
+        event id, or `None` for a type the adapter does not handle. Never raises.
+        """
+        try:
+            from .stripe.map import map_stripe_event
+
+            mapped = map_stripe_event(event)
+        except Exception as exc:
+            self._count("emitted", "dropped_invalid")
+            self.notify({"code": "invalid_event", "message": f"stripe: {exc}" if str(exc) else "stripe mapping failed"})
+            return None
+        return None if mapped is None else self.emit(mapped)
+
     def flush(self, timeout: float | None = None, *, replay_spool: bool = True) -> dict[str, bool]:
         """
         Send everything queued and wait for it. Without `timeout` this waits for the full retry

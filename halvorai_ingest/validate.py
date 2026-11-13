@@ -21,6 +21,8 @@ from pydantic import (
     model_validator,
 )
 
+from .text import utf16_len
+
 
 def _rfc3339(value: str) -> str:
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})", value):
@@ -36,15 +38,22 @@ def _url(value: str) -> str:
 
 
 def _max(n: int) -> Any:
-    return StringConstraints(strict=True, max_length=n)
+    """Limit in UTF-16 code units, as the API and the JSON Schema (via JavaScript) count them."""
+
+    def check(value: str) -> str:
+        if utf16_len(value) > n:
+            raise ValueError(f"must be at most {n} UTF-16 code units")
+        return value
+
+    return AfterValidator(check)
 
 
-S16 = Annotated[str, _max(16)]
-S32 = Annotated[str, _max(32)]
-S64 = Annotated[str, _max(64)]
-S128 = Annotated[str, _max(128)]
-S256 = Annotated[str, _max(256)]
-S500 = Annotated[str, _max(500)]
+S16 = Annotated[str, StringConstraints(strict=True), _max(16)]
+S32 = Annotated[str, StringConstraints(strict=True), _max(32)]
+S64 = Annotated[str, StringConstraints(strict=True), _max(64)]
+S128 = Annotated[str, StringConstraints(strict=True), _max(128)]
+S256 = Annotated[str, StringConstraints(strict=True), _max(256)]
+S500 = Annotated[str, StringConstraints(strict=True), _max(500)]
 EventId = Annotated[str, StringConstraints(strict=True, min_length=8, max_length=128)]
 DateTime = Annotated[str, StringConstraints(strict=True), AfterValidator(_rfc3339)]
 Url = Annotated[str, StringConstraints(strict=True), AfterValidator(_url)]
