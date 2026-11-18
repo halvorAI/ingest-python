@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+
+- `halvorai-ingest demo` (or `python -m halvorai_ingest demo`): signs one event with a fresh local key, verifies the signature, then changes the amount and shows the same check fail. No account or API key. The instruction text is hashed and never printed.
+
 ## 0.5.0
 
 ### Added
