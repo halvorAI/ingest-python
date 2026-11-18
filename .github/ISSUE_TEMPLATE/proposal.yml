@@ -1,0 +1,35 @@
+name: Feature proposal
+description: Suggest an adapter, an example or an API change.
+labels: ["proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: For anything bigger than a small fix, agreeing on scope here first saves you work. Use synthetic data only.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: Who needs it, and what they can't do today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would you add or change? Show the API you have in mind if it's a code change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to work on this?
+      options:
+        - Yes, I'd like to open the pull request
+        - I could help with review or testing
+        - No, just suggesting it
+    validations:
+      required: true

@@ -140,14 +140,18 @@ MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github
 ## Develop
 
 ```bash
-uv sync --extra dev
-uv run pytest
+uv sync --locked --extra dev
 uv run mypy
+uv run pytest -q
 ```
+
+## Contributing
+
+Bug fixes, tests, offline examples and doc fixes are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has the setup, the checks CI runs and how quickly we respond. Starter tasks are labeled [`good first issue`](https://github.com/halvorAI/ingest-python/labels/good%20first%20issue).
 
 ## Security
 
-Report vulnerabilities privately to hello@halvorai.com.
+Report vulnerabilities privately to hello@halvorai.com, not in public issues. See [SECURITY.md](SECURITY.md).
 
 ## License
 
