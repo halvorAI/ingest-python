@@ -48,7 +48,7 @@ Look for issues labeled [`good first issue`](https://github.com/halvorAI/ingest-
 
 ## How we respond
 
-The maintainers are [@hedge-waleed](https://github.com/hedge-waleed) (reviewer) and [@hedge-usama](https://github.com/hedge-usama) (backup reviewer). In business days, we aim to:
+The maintainers are [@hedge-waleed](https://github.com/hedge-waleed) (reviewer) and [@hedge-urk](https://github.com/hedge-urk) (backup reviewer). In business days, we aim to:
 
 | What you open | First response |
 | --- | --- |
