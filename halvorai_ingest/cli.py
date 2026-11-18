@@ -1,4 +1,4 @@
-"""Command line: `halvorai-ingest init` (or `python -m halvorai_ingest init`)."""
+"""Command line: `halvorai-ingest demo` and `halvorai-ingest init` (or `python -m halvorai_ingest ...`)."""
 
 from __future__ import annotations
 
@@ -7,12 +7,14 @@ import getpass
 import os
 import sys
 
+from .demo import run_demo
 from .init import run_init
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="halvorai-ingest")
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("demo", help="sign one event offline and verify it; no account needed")
     init = commands.add_parser(
         "init",
         help="register this machine as a source, write .env.local and send a test event",
@@ -23,6 +25,10 @@ def main(argv: list[str] | None = None) -> int:
     init.add_argument("--name", help="source name (default: this machine's hostname)")
     init.add_argument("--cwd", default=".", help="folder for .env.local (default: current folder)")
     args = parser.parse_args(argv)
+
+    if args.command == "demo":
+        result = run_demo()
+        return 0 if result.signed_verified and result.tampered_rejected else 1
 
     api_key = args.api_key or os.environ.get("HALVOR_API_KEY") or getpass.getpass("API key: ").strip()
     try:

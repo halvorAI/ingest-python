@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 272" width="860" height="272" role="img" aria-labelledby="t">
+<title id="t">Output of halvorai-ingest demo: an event is signed and verified, then the same event with a changed amount fails verification</title>
+<style>
+text{font:13px 'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;opacity:0;animation:in .01s forwards}
+@keyframes in{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){text{animation:none;opacity:1}}
+.n{fill:#F3EFE6}.p{fill:#A39E91}.hd{fill:#F3EFE6;font-weight:700}.v{fill:#C6F432}.bad{fill:#F0624D}
+</style>
+<rect width="860" height="272" rx="10" fill="#1C1C1C"/>
+<circle cx="22" cy="20" r="6" fill="#3A3A36"/><circle cx="42" cy="20" r="6" fill="#3A3A36"/><circle cx="62" cy="20" r="6" fill="#3A3A36"/>
+<text class="p" x="20" y="52" style="animation-delay:0.00s">$ uvx --from halvorai-ingest halvorai-ingest demo</text>
+<text class="hd" x="20" y="72" style="animation-delay:0.25s">1. Sign an event on this machine</text>
+<text class="n" x="20" y="92" style="animation-delay:0.50s">   evt_01KDEMO0000000000000000000: Travel booking agent paid Example Airways 412.00 USD on stripe</text>
+<text class="n" x="20" y="112" style="animation-delay:0.75s">   Instruction sent as sha256:3645911b116c…, never as text</text>
+<text class="v" x="20" y="132" style="animation-delay:1.00s">   Ed25519 signature: verified</text>
+<text class="n" x="20" y="152" style="animation-delay:1.25s"></text>
+<text class="hd" x="20" y="172" style="animation-delay:1.50s">2. Change the amount from 41200 to 41290 and verify again</text>
+<text class="bad" x="20" y="192" style="animation-delay:1.75s">   Ed25519 signature: FAILED, the event was changed after signing</text>
+<text class="n" x="20" y="212" style="animation-delay:2.00s"></text>
+<text class="n" x="20" y="232" style="animation-delay:2.25s">Next: pass sink=... to keep envelopes, or run `halvorai-ingest init` with a sandbox key.</text>
+</svg>
