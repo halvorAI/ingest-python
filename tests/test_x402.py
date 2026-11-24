@@ -112,10 +112,59 @@ def test_context_details_reach_the_event() -> None:
     assert event["owner"]["country"] == "US"
 
 
-def test_payer_wallet_is_the_agent_without_context() -> None:
-    mapped = map_payment_payload(PAYLOAD)
-    assert mapped is not None
-    assert mapped["agent"] == {"id": PAYLOAD["payload"]["authorization"]["from"]}
+def test_payer_wallet_is_never_the_agent_id() -> None:
+    """A wallet does not say which agent paid, and would count the payment as attributed (#17)."""
+    payer = PAYLOAD["payload"]["authorization"]["from"]
+    authorized = map_payment_payload(PAYLOAD)
+    settled = map_settlement_response({**SETTLED, "payer": payer}, accept=ACCEPT)
+    for mapped in (authorized, settled):
+        assert mapped is not None
+        assert mapped["agent"] == {"id": "unattributed"}
+        assert mapped["instrument"]["wallet"]["address"] == payer
+
+
+def test_a_settlement_without_a_nonce_never_shares_an_id() -> None:
+    """Unrelated payments must not be merged into one payment_id (#18)."""
+
+    def settle(tx: str | None) -> dict[str, Any]:
+        settlement = {k: v for k, v in SETTLED.items() if k != "transaction"}
+        return {**settlement, **({} if tx is None else {"transaction": tx})}
+
+    a = map_settlement_response(settle("0xaaa"), accept=ACCEPT)
+    b = map_settlement_response(settle("0xbbb"), accept=ACCEPT)
+    retry = map_settlement_response(settle("0xaaa"), accept=ACCEPT)
+    assert a is not None and b is not None and retry is not None
+    network = ACCEPT["network"]
+    assert a["payment"]["payment_id"] == f"x402:{network}:tx:0xaaa"
+    assert b["payment"]["payment_id"] == f"x402:{network}:tx:0xbbb"
+    assert retry["payment"]["payment_id"] == a["payment"]["payment_id"]
+
+    # The nonce form is unchanged, even when a tx hash is known.
+    with_nonce = map_settlement_response(settle("0xaaa"), accept=ACCEPT, nonce="0xn1")
+    assert with_nonce is not None
+    assert with_nonce["payment"]["payment_id"] == f"x402:{network}:0xn1"
+
+    # Neither nonce nor tx hash: the event id, so two such events differ.
+    x = map_settlement_response(settle(None), accept=ACCEPT)
+    y = map_settlement_response(settle(None), accept=ACCEPT)
+    assert x is not None and y is not None
+    assert x["payment"]["payment_id"] != y["payment"]["payment_id"]
+    assert x["payment"]["payment_id"].startswith(f"x402:{network}:event:evt_")
+    assert x["id"] in x["payment"]["payment_id"]
+    assert "unknown" not in x["payment"]["payment_id"]
+
+
+def test_a_payload_without_a_nonce_never_shares_an_id() -> None:
+    authorization = {k: v for k, v in PAYLOAD["payload"]["authorization"].items() if k != "nonce"}
+    payload = {**PAYLOAD, "payload": {**PAYLOAD["payload"], "authorization": authorization}}
+    a = map_payment_payload(payload)
+    b = map_payment_payload(payload)
+    assert a is not None and b is not None
+    assert a["payment"]["payment_id"] != b["payment"]["payment_id"]
+    assert "unknown" not in a["payment"]["payment_id"]
+    assert "nonce" not in a["payment"]["rail_ref"]
+    (event,) = emit_all(a)
+    assert event["payment"]["payment_id"] == a["payment"]["payment_id"]
 
 
 @pytest.mark.parametrize("missing", ["network", "asset"])
