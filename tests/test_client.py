@@ -39,6 +39,7 @@ def test_emit_flush_sink_signs() -> None:
                         },
                     },
                     "status": "settled",
+                "rail_ref": {"scheme": "exact", "network": "eip155:8453"},
                     "rail_ref": {"scheme": "exact", "network": "eip155:84532"},
                 },
                 "payee": {"type": "api_provider", "name": "demo"},
@@ -59,3 +60,52 @@ def test_emit_never_throws() -> None:
     client = HalvorClient(source_key=None)
     assert client.emit(None)
     assert client.emit("bad")
+
+
+def _emit_one(**overrides: Any) -> dict[str, Any]:
+    data = json.loads(VECTOR.read_text(encoding="utf-8"))
+    envelopes: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    client = HalvorClient(source_key=data["private_jwk"], environment="test", sink=envelopes.extend, on_error=errors.append, exit_hook=False)
+    client.emit(
+        {
+            "type": "payment.settled",
+            "payment": {
+                "payment_id": "py:1",
+                "rail": "x402",
+                "status": "settled",
+                "rail_ref": {"scheme": "exact", "network": "eip155:8453"},
+                "amount": {"value": "1", "unit": "atomic", "asset": {"network": "eip155:8453", "address": "0xabc", "symbol": "USDC", "decimals": 6}},
+            },
+            "payee": {"type": "wallet", "name": "x402 payee"},
+            **overrides,
+        }
+    )
+    client.flush(timeout=5)
+    client.close()
+    assert errors == []
+    (envelope,) = envelopes
+    event: dict[str, Any] = envelope["event"]
+    return event
+
+
+def test_unknown_owner_is_labelled_because_the_type_is_only_a_placeholder() -> None:
+    """halvorAI/halvorai-app#99: v0.1 forces a type, so the label says it is not a fact."""
+    event = _emit_one()
+    assert event["owner"] == {"id": "unattributed", "type": "business"}
+    assert event["labels"] == {"owner_type": "unknown"}
+
+
+def test_an_adapter_supplied_unattributed_owner_is_labelled_too() -> None:
+    event = _emit_one(owner={"id": "unattributed", "type": "business"})
+    assert event["labels"] == {"owner_type": "unknown"}
+
+
+def test_a_real_owner_is_not_labelled() -> None:
+    event = _emit_one(owner={"id": "own_real", "type": "person"})
+    assert "labels" not in event
+
+
+def test_caller_labels_are_kept_and_owner_type_is_not_overwritten() -> None:
+    assert _emit_one(labels={"team": "growth"})["labels"] == {"team": "growth", "owner_type": "unknown"}
+    assert _emit_one(labels={"owner_type": "person"})["labels"] == {"owner_type": "person"}

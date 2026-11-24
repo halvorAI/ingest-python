@@ -379,7 +379,24 @@ class HalvorClient:
         for key in ("instrument", "evidence", "related", "labels"):
             if input_event.get(key) is not None:
                 event[key] = input_event[key]
+        self._label_unknown_owner(event)
         return event
+
+    @staticmethod
+    def _label_unknown_owner(event: dict[str, Any]) -> None:
+        """APE v0.1 requires `owner.type`, so an unknown owner still carries a placeholder type.
+
+        The label tells a reader the type is not a fact. A caller's own `owner_type` label wins.
+        (halvorAI/halvorai-app#99; APE v0.2 is expected to allow `owner.type: "unknown"`.)
+        """
+        owner = event.get("owner")
+        if not isinstance(owner, dict) or owner.get("id") != "unattributed":
+            return
+        labels = event.get("labels")
+        if labels is None:
+            event["labels"] = {"owner_type": "unknown"}
+        elif isinstance(labels, dict) and "owner_type" not in labels and len(labels) < 20:
+            event["labels"] = {**labels, "owner_type": "unknown"}
 
     @staticmethod
     def _build_instruction(

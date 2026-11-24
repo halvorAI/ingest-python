@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- x402: the payer wallet is no longer used as `agent.id`. Without an agent context the agent is `unattributed`, and the wallet stays in `instrument.wallet`. Before, a seller-side payment looked attributed when nothing was known about the agent.
+- x402: payments without a nonce no longer share the id `x402:<network>:unknown`. The id falls back to `x402:<network>:tx:<transaction hash>`, then to `x402:<network>:event:<event id>`. A `tx:` id cannot join a payer-side record that has the nonce.
+- An event whose owner is `unattributed` now carries `labels.owner_type: "unknown"`, because APE v0.1 forces a placeholder type. A Stripe event with an owner id but no `halvor_owner_type` is labelled the same way, instead of silently becoming a business. A label you set yourself is kept.
+
 ## 0.6.0
 
 ### Added

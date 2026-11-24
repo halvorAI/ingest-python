@@ -39,7 +39,7 @@ def _host(url: str | None) -> str | None:
         return None
 
 
-def _attribution(payer_wallet: str | None = None) -> dict[str, Any]:
+def _attribution() -> dict[str, Any]:
     """Agent and owner, but only when `agent_context` did not set them.
 
     When it did, they are left out so the client fills the full context (name, framework,
@@ -48,10 +48,26 @@ def _attribution(payer_wallet: str | None = None) -> dict[str, Any]:
     ctx = current_context()
     out: dict[str, Any] = {}
     if not ctx or not ctx.get("agent"):
-        out["agent"] = {"id": payer_wallet or "unattributed"}
+        # The payer wallet is never the agent id: it does not say which agent paid and would count
+        # the payment as attributed. It stays in `instrument.wallet`.
+        out["agent"] = {"id": "unattributed"}
     if not ctx or not ctx.get("owner"):
         out["owner"] = {"id": "unattributed", "type": "business"}
     return out
+
+
+def _payment_id(network: str, *, nonce: str | None, tx_hash: str | None, event_id: str) -> str:
+    """`x402:<network>:<nonce>` joins authorization, settlement and failure.
+
+    Without a nonce the id falls back to the transaction hash (unique and stable across retries,
+    but it cannot join a payer-side record that has the nonce), then to the event id. It is never
+    a shared constant.
+    """
+    if nonce:
+        return f"x402:{network}:{nonce}"
+    if tx_hash:
+        return f"x402:{network}:tx:{tx_hash}"
+    return f"x402:{network}:event:{event_id}"
 
 
 def _asset(accept: Mapping[str, Any]) -> dict[str, Any]:
@@ -161,23 +177,25 @@ def map_payment_payload(
     if not isinstance(accepted, Mapping):
         return None
     auth = _mapping(_mapping(payload.get("payload")).get("authorization"))
-    nonce = _str(auth.get("nonce")) or "unknown"
+    nonce = _str(auth.get("nonce"))
     network = _str(accepted.get("network")) or "unknown"
     payer = _str(auth.get("from"))
+    event_id = new_event_id()
     payment: dict[str, Any] = {
-        "payment_id": f"x402:{network}:{nonce}",
+        "payment_id": _payment_id(network, nonce=nonce, tx_hash=None, event_id=event_id),
         "rail": "x402",
         "amount": _amount(accepted, _str(auth.get("value"))),
         "status": "authorized",
-        "rail_ref": _rail_ref(accepted, {"nonce": nonce}),
+        "rail_ref": _rail_ref(accepted, {} if nonce is None else {"nonce": nonce}),
     }
     resource = _mapping(payload.get("resource"))
     _description(payment, resource)
     value = dict(payload)
     mapped: dict[str, Any] = {
+        "id": event_id,
         "type": "payment.authorized",
         "source": {"adapter": adapter},
-        **_attribution(payer),
+        **_attribution(),
         "payment": payment,
         "payee": _payee(accepted, resource, payee_override),
         "evidence": [
@@ -217,8 +235,9 @@ def map_settlement_response(
     tx = _str(settlement.get("transaction"))
     if tx:
         extra["tx_hash"] = tx
+    event_id = new_event_id()
     payment: dict[str, Any] = {
-        "payment_id": f"x402:{network}:{nonce or 'unknown'}",
+        "payment_id": _payment_id(network, nonce=nonce, tx_hash=tx, event_id=event_id),
         "rail": "x402",
         "amount": _amount(merged, _str(settlement.get("amount")) or _str(merged.get("amount"))),
         "status": "settled" if success else "failed",
@@ -229,9 +248,10 @@ def map_settlement_response(
     _description(payment, resource)
     value = dict(settlement)
     mapped: dict[str, Any] = {
+        "id": event_id,
         "type": "payment.settled" if success else "payment.failed",
         "source": {"adapter": adapter},
-        **_attribution(payer),
+        **_attribution(),
         "payment": payment,
         "payee": _payee(merged, resource, payee_override),
         "evidence": [

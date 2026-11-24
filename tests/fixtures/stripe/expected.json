@@ -506,7 +506,10 @@
         "sha256": "sha256:aff5e0397ad01568cffe874a076f690cc767c7d49b98c6489f27dc98335c2d10"
       }
     ],
-    "occurred_at": "2024-10-17T12:00:12.000Z"
+    "occurred_at": "2024-10-17T12:00:12.000Z",
+    "labels": {
+      "owner_type": "unknown"
+    }
   },
   "payment_intent.succeeded.json": {
     "type": "payment.settled",
@@ -619,7 +622,10 @@
         "sha256": "sha256:ad600225b2e8e350da3b094a9aca984c39a920e08aa2298916be848f89f0e374"
       }
     ],
-    "occurred_at": "2024-10-17T12:43:20.000Z"
+    "occurred_at": "2024-10-17T12:43:20.000Z",
+    "labels": {
+      "owner_type": "unknown"
+    }
   },
   "case:named-card": {
     "input": {

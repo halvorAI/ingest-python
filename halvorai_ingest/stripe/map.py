@@ -100,13 +100,17 @@ def _attribution(meta: Mapping[str, str]) -> dict[str, Any]:
         agent["name"] = cut(name, 128)
     if framework:
         agent["framework"] = cut(framework, 64)
+    declared = meta.get("halvor_owner_type")
     out: dict[str, Any] = {
         "agent": agent,
         "owner": {
             "id": meta.get("halvor_owner_id", "unattributed"),
-            "type": "person" if meta.get("halvor_owner_type") == "person" else "business",
+            "type": "person" if declared == "person" else "business",
         },
     }
+    if declared not in ("person", "business"):
+        # The type is a placeholder, so say so (halvorAI/halvorai-app#99).
+        out["labels"] = {"owner_type": "unknown"}
     instruction_id = meta.get("halvor_instruction_id")
     if instruction_id is not None:
         # Webhooks carry only the id; hash a stable local stand-in so APE validation passes.
@@ -186,6 +190,8 @@ def _finish(
         mapped["occurred_at"] = at
     if "instruction" in attr:
         mapped["instruction"] = attr["instruction"]
+    if "labels" in attr:
+        mapped["labels"] = attr["labels"]
     return mapped
 
 
