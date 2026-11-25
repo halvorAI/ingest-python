@@ -1,0 +1,114 @@
+{
+  "ape_version": "0.2",
+  "id": "evt_01JD3C1A2B3C4D5E6F7G8H9J0K",
+  "type": "payment.settled",
+  "occurred_at": "2026-11-24T12:00:06.312Z",
+  "environment": "test",
+  "source": {
+    "id": "src_01JD3B0A1B2C3D4E5F6G7H8J9K",
+    "sdk": "@halvorai/ingest@0.5.0",
+    "adapter": "custom",
+    "perspective": "payer"
+  },
+  "agent": {
+    "id": "agt_research_buyer",
+    "name": "Research buyer"
+  },
+  "owner": {
+    "id": "own_sample_person",
+    "type": "person"
+  },
+  "instruction": {
+    "id": "ins_buy_dataset",
+    "hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "normalised_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "normalisation": "ws-lower-v1",
+    "summary": "Buy one Tidewater Data export.",
+    "channel": "chat",
+    "tool_call_id": "call_pay_2"
+  },
+  "payment": {
+    "payment_id": "pay_second_attempt",
+    "rail": "stablecoin",
+    "amount": {
+      "value": "250000",
+      "unit": "atomic",
+      "asset": {
+        "network": "eip155:8453",
+        "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "symbol": "USDC",
+        "decimals": 6
+      }
+    },
+    "payer_amount": {
+      "value": "253636",
+      "unit": "atomic",
+      "asset": {
+        "network": "eip155:8453",
+        "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "symbol": "USDC",
+        "decimals": 6
+      }
+    },
+    "fees": [
+      {
+        "kind": "bridge",
+        "amount": {
+          "value": "1125",
+          "unit": "atomic",
+          "asset": {
+            "network": "eip155:8453",
+            "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "symbol": "USDC",
+            "decimals": 6
+          }
+        }
+      },
+      {
+        "kind": "slippage",
+        "amount": {
+          "value": "2511",
+          "unit": "atomic",
+          "asset": {
+            "network": "eip155:8453",
+            "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "symbol": "USDC",
+            "decimals": 6
+          }
+        }
+      }
+    ],
+    "checkout_digest": "Xk3h2m8QpL0vN7rT4yW1zA6bC9dE5fG2hJ8kM3nP0qR",
+    "status": "settled",
+    "description": "Dataset export",
+    "rail_ref": {
+      "network": "eip155:8453",
+      "tx_hash": "0x3c5e7a9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e7b9d1f3a5c",
+      "log_index": 4
+    }
+  },
+  "payee": {
+    "type": "business",
+    "name": "Tidewater Data",
+    "id": "tidewater-data",
+    "receipt_key": {
+      "kid": "tidewater-receipts-1",
+      "jwks_uri": "https://tidewater.example.com/.well-known/jwks.json"
+    }
+  },
+  "evidence": [
+    {
+      "kind": "tool.response",
+      "format": "json",
+      "value": {
+        "tool": "pay_invoice",
+        "call_id": "call_pay_1",
+        "at": "2026-11-24T12:00:01.204Z",
+        "content_type": "application/json",
+        "body_sha256": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "body": "{\"status\":\"failed\",\"reason\":\"timeout\"}"
+      },
+      "sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

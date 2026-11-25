@@ -1,7 +1,8 @@
-"""APE v0.1 validation before signing, so a malformed event is dropped and reported, never sent.
+"""APE v0.1 and v0.2 validation before signing, so a malformed event is dropped and reported, never sent.
 
 Mirrors the TypeScript SDK's zod model (`packages/schema/src/ape.ts`), which matches the published
-JSON Schema at https://schema.halvorai.com/ape/v0.1.json, plus the card-number guard.
+JSON Schemas at https://schema.halvorai.com/ape/v0.1.json and /ape/v0.2.json, plus the card-number
+guard. A `0.1` event that uses a v0.2 field is refused, as the v0.1 schema refuses it.
 """
 
 from __future__ import annotations
@@ -64,6 +65,8 @@ AmountValue = Annotated[str, StringConstraints(strict=True, pattern=r"^(0|[1-9][
 Currency = Annotated[str, StringConstraints(strict=True, pattern=r"^[A-Z]{3}$")]
 FourDigits = Annotated[str, StringConstraints(strict=True, pattern=r"^[0-9]{4}$")]
 RefValue = Union[Annotated[str, StringConstraints(strict=True)], Annotated[int, Field(strict=True)]]
+CheckoutDigest = Annotated[str, StringConstraints(strict=True, pattern=r"^[A-Za-z0-9_-]{43}$")]
+GapReason = Literal["not_visible_to_observer", "not_provided"]
 
 
 class _Strict(BaseModel):
@@ -87,6 +90,7 @@ class Source(_Strict):
     adapter: Literal[
         "stripe", "stripe-issuing", "x402-client", "x402-server", "mpp-server", "mcp", "manual", "custom"
     ]
+    perspective: Literal["payer", "payee", "facilitator", "network"] | None = None
 
 
 class Kya(_Strict):
@@ -107,10 +111,17 @@ class Agent(_Strict):
 
 class Owner(_Strict):
     id: S128
-    type: Literal["person", "business"]
+    type: Literal["person", "business", "unknown"]
+    unknown_reason: GapReason | None = None
     display_name: S128 | None = None
     country: Country | None = None
     kyc_ref: S128 | None = None
+
+    @model_validator(mode="after")
+    def _reason_only_when_unknown(self) -> "Owner":
+        if self.unknown_reason is not None and self.type != "unknown":
+            raise ValueError("unknown_reason only with type unknown")
+        return self
 
 
 class Instruction(_Strict):
@@ -120,6 +131,14 @@ class Instruction(_Strict):
     channel: Literal["chat", "api", "schedule", "email", "agent", "other"] | None = None
     issued_at: DateTime | None = None
     tool_call_id: S128 | None = None
+    normalised_hash: Sha256 | None = None
+    normalisation: Literal["ws-lower-v1"] | None = None
+
+    @model_validator(mode="after")
+    def _normalisation_pair(self) -> "Instruction":
+        if (self.normalised_hash is None) != (self.normalisation is None):
+            raise ValueError("normalised_hash and normalisation go together")
+        return self
 
 
 class Asset(_Strict):
@@ -147,9 +166,24 @@ Amount = Annotated[Union[MinorAmount, AtomicAmount], Field(discriminator="unit")
 PaymentStatus = Literal["requested", "authorized", "settled", "failed", "refunded", "disputed"]
 
 
+class Fee(_Strict):
+    kind: Literal["bridge", "network", "slippage", "platform", "fx", "other"]
+    amount: Amount
+
+
+class Intermediary(_Strict):
+    name: S128 | None = None
+    id: S128 | None = None
+    ref_tag: S128 | None = None
+
+
 class _PaymentBase(_Strict):
     payment_id: S256
     amount: Amount
+    payer_amount: Amount | None = None
+    fees: Annotated[list[Fee], Field(max_length=8)] | None = None
+    checkout_digest: CheckoutDigest | None = None
+    intermediary: Intermediary | None = None
     status: PaymentStatus
     failure_reason: S128 | None = None
     description: S256 | None = None
@@ -185,6 +219,7 @@ class X402Ref(_Strict):
     tx_hash: RefValue | None = None
     facilitator: RefValue | None = None
     payment_flow: RefValue | None = None
+    submitter: RefValue | None = None
 
 
 class MppRef(_Strict):
@@ -198,6 +233,7 @@ class StablecoinRef(_Strict):
     network: RefValue | None = None
     tx_hash: RefValue | None = None
     log_index: RefValue | None = None
+    submitter: RefValue | None = None
 
 
 class BankTransferRef(_Strict):
@@ -247,6 +283,12 @@ class Wallet(_Strict):
     address: S128
 
 
+class ReceiptKey(_Strict):
+    kid: S128 | None = None
+    jwk: dict[str, Any] | None = None
+    jwks_uri: Url | None = None
+
+
 class Payee(_Strict):
     type: Literal["merchant", "api_provider", "wallet", "business", "person"]
     name: S256 | None = None
@@ -256,6 +298,7 @@ class Payee(_Strict):
     mcc: FourDigits | None = None
     wallet: Wallet | None = None
     resource_url: Url | None = None
+    receipt_key: ReceiptKey | None = None
 
     @model_validator(mode="after")
     def _identified(self) -> "Payee":
@@ -286,6 +329,8 @@ class Evidence(_Strict):
         "stripe.object",
         "agentic_token.metadata",
         "kya.attestation",
+        "chain.receipt",
+        "tool.response",
     ]
     format: Literal["sd-jwt", "kb-sd-jwt", "jws", "http-signature", "json"]
     value: Union[Annotated[str, StringConstraints(strict=True)], dict[str, Any]] | None = None
@@ -307,6 +352,81 @@ class Related(_Strict):
 
 
 Labels = Annotated[dict[S64, S256], Field(max_length=20)]
+
+
+class Delivery(_Strict):
+    request_sha256: Sha256 | None = None
+    response_sha256: Sha256 | None = None
+    response_bytes: Annotated[int, Field(strict=True, ge=0)] | None = None
+    http_status: Annotated[int, Field(strict=True, ge=100, le=599)] | None = None
+    summary: S256 | None = None
+
+
+class AttributionGap(_Strict):
+    field: Literal["owner", "agent", "instruction", "mandate"]
+    reason: GapReason
+
+
+def _unique_gap_fields(gaps: list[AttributionGap] | None) -> list[AttributionGap] | None:
+    if gaps is not None and len({g.field for g in gaps}) != len(gaps):
+        raise ValueError("each attribution gap field at most once")
+    return gaps
+
+
+AttributionGaps = Annotated[list[AttributionGap], Field(max_length=4), AfterValidator(_unique_gap_fields)]
+
+
+class Report(_Strict):
+    channel: Literal["chat", "api", "email", "other"] | None = None
+    summary: S500 | None = None
+    payments_claimed: Annotated[int, Field(strict=True, ge=0)] | None = None
+    amount_claimed: Amount | None = None
+    body_sha256: Sha256
+
+
+V02_EVIDENCE_KINDS = ("chain.receipt", "tool.response")
+
+
+def v02_fields_used(event: Mapping[str, Any]) -> list[str]:
+    """Paths of APE v0.2 fields in an event, so a `0.1` event that uses one can be refused."""
+
+    def obj(v: Any) -> Mapping[str, Any]:
+        return v if isinstance(v, Mapping) else {}
+
+    out: list[str] = []
+    if event.get("type") == "agent.reported":
+        out.append("type")
+    out += [k for k in ("attribution_gaps", "delivery", "report") if k in event]
+    if "perspective" in obj(event.get("source")):
+        out.append("source.perspective")
+    owner = obj(event.get("owner"))
+    if owner.get("type") == "unknown":
+        out.append("owner.type")
+    if "unknown_reason" in owner:
+        out.append("owner.unknown_reason")
+    instruction = obj(event.get("instruction"))
+    out += [f"instruction.{k}" for k in ("normalised_hash", "normalisation") if k in instruction]
+    payment = obj(event.get("payment"))
+    out += [f"payment.{k}" for k in ("payer_amount", "fees", "checkout_digest", "intermediary") if k in payment]
+    if "submitter" in obj(payment.get("rail_ref")):
+        out.append("payment.rail_ref.submitter")
+    if "receipt_key" in obj(event.get("payee")):
+        out.append("payee.receipt_key")
+    evidence = event.get("evidence")
+    if isinstance(evidence, list):
+        out += [f"evidence.{i}.kind" for i, e in enumerate(evidence) if obj(e).get("kind") in V02_EVIDENCE_KINDS]
+    return out
+
+
+class _Versioned(_Strict):
+    @model_validator(mode="before")
+    @classmethod
+    def _v02_only_in_v02(cls, data: Any) -> Any:
+        if isinstance(data, Mapping) and data.get("ape_version") == "0.1":
+            used = v02_fields_used(data)
+            if used:
+                raise ValueError(f"v0.2 field in a 0.1 event: {', '.join(used)}")
+        return data
 
 
 def contains_pan(text: str) -> bool:
@@ -331,8 +451,8 @@ def _luhn(digits: str) -> bool:
     return total % 10 == 0
 
 
-class ApeEvent(_Strict):
-    ape_version: Literal["0.1"]
+class ApeEvent(_Versioned):
+    ape_version: Literal["0.1", "0.2"]
     id: EventId
     type: Literal[
         "payment.requested",
@@ -354,6 +474,8 @@ class ApeEvent(_Strict):
     evidence: Annotated[list[Evidence], Field(max_length=16)] | None = None
     related: Related | None = None
     labels: Labels | None = None
+    attribution_gaps: AttributionGaps | None = None
+    delivery: Delivery | None = None
 
     @model_validator(mode="after")
     def _no_card_numbers(self) -> "ApeEvent":
@@ -367,6 +489,40 @@ class ApeEvent(_Strict):
             self.payee.name,
             self.payee.website,
             self.payee.resource_url,
+            self.delivery.summary if self.delivery else None,
+            *(self.labels or {}).keys(),
+            *(self.labels or {}).values(),
+        ]
+        if any(t is not None and contains_pan(t) for t in texts):
+            raise ValueError("pan_detected")
+        return self
+
+
+class ApeReportEvent(_Versioned):
+    """APE v0.2 `agent.reported`: what the agent told its owner. Not a payment."""
+
+    ape_version: Literal["0.1", "0.2"]
+    id: EventId
+    type: Literal["agent.reported"]
+    occurred_at: DateTime
+    environment: Literal["test", "live"]
+    source: Source
+    agent: Agent
+    owner: Owner
+    instruction: Instruction
+    report: Report
+    evidence: Annotated[list[Evidence], Field(max_length=16)] | None = None
+    related: Related | None = None
+    labels: Labels | None = None
+    attribution_gaps: AttributionGaps | None = None
+
+    @model_validator(mode="after")
+    def _no_card_numbers(self) -> "ApeReportEvent":
+        texts = [
+            self.report.summary,
+            self.instruction.summary,
+            self.agent.name,
+            self.owner.display_name,
             *(self.labels or {}).keys(),
             *(self.labels or {}).values(),
         ]
@@ -376,12 +532,14 @@ class ApeEvent(_Strict):
 
 
 _EVENT = TypeAdapter(ApeEvent)
+_REPORT = TypeAdapter(ApeReportEvent)
 
 
 def validate_event(event: Mapping[str, Any]) -> list[str]:
     """Problems with the event, as `path: message` strings. Empty when the event is valid."""
     try:
-        _EVENT.validate_python(dict(event))
+        adapter = _REPORT if event.get("type") == "agent.reported" else _EVENT
+        adapter.validate_python(dict(event))
         return []
     except ValidationError as exc:
         return [".".join(str(p) for p in err["loc"]) + ": " + err["msg"] for err in exc.errors()]

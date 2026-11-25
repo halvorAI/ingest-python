@@ -1,12 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-11-25)
+
+Needs a HalvorAI API that accepts APE v0.2. Events that use no v0.2 field are still sent as v0.1.
+
+### Added
+
+- APE v0.2 support. An event is sent as `0.2` only when it uses a v0.2 field, and the signature header follows. Validation accepts v0.1 and v0.2 and refuses v0.2 fields in a `0.1` event.
+- `halvor.emit_report(instruction=..., report=...)` records what the agent told its owner about an instruction (`agent.reported`). The message is hashed locally and never sent. HalvorAI compares the report with the payments made under that instruction.
+- v0.2 fields pass through `emit`: `payment.payer_amount`, `payment.fees`, `payment.checkout_digest`, `payment.intermediary`, `delivery`, `attribution_gaps`, `source.perspective` and `payee.receipt_key`.
+- `"normalise": True` on an instruction given as `text` adds a `ws-lower-v1` hash, so two runs of one task that differ only in a local port or spacing match.
+- x402: the server side sets `source.perspective: "payee"`, and without an agent context lists what it could not see (agent, owner, instruction, mandate) in `attribution_gaps`. The client side sets `"payer"`.
+
+### Changed
+
+- An owner nobody named is sent as `{"id": "unattributed", "type": "unknown"}` (APE v0.2). The `labels.owner_type: "unknown"` stopgap is gone. A Stripe event with an owner id but no `halvor_owner_type` sends `type: "unknown"`.
 
 ### Fixed
 
 - x402: the payer wallet is no longer used as `agent.id`. Without an agent context the agent is `unattributed`, and the wallet stays in `instrument.wallet`. Before, a seller-side payment looked attributed when nothing was known about the agent.
 - x402: payments without a nonce no longer share the id `x402:<network>:unknown`. The id falls back to `x402:<network>:tx:<transaction hash>`, then to `x402:<network>:event:<event id>`. A `tx:` id cannot join a payer-side record that has the nonce.
-- An event whose owner is `unattributed` now carries `labels.owner_type: "unknown"`, because APE v0.1 forces a placeholder type. A Stripe event with an owner id but no `halvor_owner_type` is labelled the same way, instead of silently becoming a business. A label you set yourself is kept.
 
 ## 0.6.0
 

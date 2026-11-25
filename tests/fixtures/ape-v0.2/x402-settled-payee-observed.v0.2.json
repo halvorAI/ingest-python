@@ -1,0 +1,107 @@
+{
+  "ape_version": "0.2",
+  "id": "evt_01JD2S8E5K7M9P1R3T5V7X9Z0B",
+  "type": "payment.settled",
+  "occurred_at": "2026-11-20T15:02:11.481Z",
+  "environment": "test",
+  "source": {
+    "id": "src_01JD2S0A1B2C3D4E5F6G7H8J9K",
+    "sdk": "@halvorai/ingest@0.5.0",
+    "adapter": "x402-server",
+    "perspective": "payee"
+  },
+  "agent": {
+    "id": "unattributed"
+  },
+  "owner": {
+    "id": "unattributed",
+    "type": "unknown",
+    "unknown_reason": "not_visible_to_observer"
+  },
+  "attribution_gaps": [
+    {
+      "field": "agent",
+      "reason": "not_visible_to_observer"
+    },
+    {
+      "field": "owner",
+      "reason": "not_visible_to_observer"
+    },
+    {
+      "field": "instruction",
+      "reason": "not_visible_to_observer"
+    },
+    {
+      "field": "mandate",
+      "reason": "not_visible_to_observer"
+    }
+  ],
+  "payment": {
+    "payment_id": "x402:eip155:8453:0x5c0f3c1a9e2b7d4f6a8c0e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f",
+    "rail": "x402",
+    "amount": {
+      "value": "10000",
+      "unit": "atomic",
+      "asset": {
+        "network": "eip155:8453",
+        "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "symbol": "USDC",
+        "decimals": 6
+      }
+    },
+    "status": "settled",
+    "description": "Company lookup, 1 request",
+    "intermediary": {
+      "name": "Example API Marketplace",
+      "id": "mkt_example",
+      "ref_tag": "ref_7f3a"
+    },
+    "rail_ref": {
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "nonce": "0x5c0f3c1a9e2b7d4f6a8c0e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f",
+      "tx_hash": "0x9a7b5c3d1e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b",
+      "facilitator": "https://x402.org/facilitator",
+      "submitter": "0x4Fd1A0b6c2E8f3d7B9a5C1e6F0d2B8a4C7e9F3d1",
+      "payment_flow": "authorization"
+    }
+  },
+  "payee": {
+    "type": "api_provider",
+    "name": "Example Company Data",
+    "wallet": {
+      "network": "eip155:8453",
+      "address": "0x209693Bc6afc0C5328bA36FaF03C514EF312287C"
+    },
+    "resource_url": "https://api.example.com/lookup"
+  },
+  "instrument": {
+    "type": "wallet",
+    "wallet": {
+      "network": "eip155:8453",
+      "address": "0x857b06519E91e3A54538791bDbb0E22373e36b66"
+    }
+  },
+  "delivery": {
+    "request_sha256": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "response_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "response_bytes": 4812,
+    "http_status": 200,
+    "summary": "10 of 12 matches returned (result limit)"
+  },
+  "evidence": [
+    {
+      "kind": "chain.receipt",
+      "format": "json",
+      "value": {
+        "network": "eip155:8453",
+        "tx_hash": "0x9a7b5c3d1e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b",
+        "block_number": 22918844,
+        "log_index": 117,
+        "submitter": "0x4Fd1A0b6c2E8f3d7B9a5C1e6F0d2B8a4C7e9F3d1",
+        "status": "success"
+      },
+      "sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

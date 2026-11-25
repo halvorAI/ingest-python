@@ -5,6 +5,7 @@ from typing import Any
 from pathlib import Path
 
 from halvorai_ingest import HalvorClient, agent_context, verify_event
+from halvorai_ingest.hash import hash_instruction
 
 VECTOR = Path(__file__).resolve().parent / "fixtures" / "sign-vector.json"
 
@@ -89,23 +90,58 @@ def _emit_one(**overrides: Any) -> dict[str, Any]:
     return event
 
 
-def test_unknown_owner_is_labelled_because_the_type_is_only_a_placeholder() -> None:
-    """halvorAI/halvorai-app#99: v0.1 forces a type, so the label says it is not a fact."""
+def test_unknown_owner_is_unknown_with_no_label_stopgap() -> None:
+    """halvorAI/halvorai-app#99: APE v0.2 says the owner type is unknown."""
     event = _emit_one()
-    assert event["owner"] == {"id": "unattributed", "type": "business"}
-    assert event["labels"] == {"owner_type": "unknown"}
+    assert event["owner"] == {"id": "unattributed", "type": "unknown", "unknown_reason": "not_provided"}
+    assert "labels" not in event
+    assert event["ape_version"] == "0.2"
 
 
-def test_an_adapter_supplied_unattributed_owner_is_labelled_too() -> None:
-    event = _emit_one(owner={"id": "unattributed", "type": "business"})
-    assert event["labels"] == {"owner_type": "unknown"}
-
-
-def test_a_real_owner_is_not_labelled() -> None:
-    event = _emit_one(owner={"id": "own_real", "type": "person"})
+def test_a_fully_attributed_event_stays_v01() -> None:
+    event = _emit_one(agent={"id": "agt_1"}, owner={"id": "own_real", "type": "person"})
+    assert event["ape_version"] == "0.1"
     assert "labels" not in event
 
 
-def test_caller_labels_are_kept_and_owner_type_is_not_overwritten() -> None:
-    assert _emit_one(labels={"team": "growth"})["labels"] == {"team": "growth", "owner_type": "unknown"}
-    assert _emit_one(labels={"owner_type": "person"})["labels"] == {"owner_type": "person"}
+def test_v02_fields_pass_through() -> None:
+    event = _emit_one(
+        agent={"id": "agt_1"},
+        owner={"id": "own_1", "type": "person"},
+        source={"perspective": "payer"},
+        delivery={"http_status": 200, "summary": "10 of 12 results"},
+        attribution_gaps=[{"field": "mandate", "reason": "not_provided"}],
+    )
+    assert event["ape_version"] == "0.2"
+    assert event["source"]["perspective"] == "payer"
+    assert event["delivery"] == {"http_status": 200, "summary": "10 of 12 results"}
+
+
+def test_normalise_adds_a_ws_lower_v1_hash() -> None:
+    event = _emit_one(instruction={"id": "ins_1", "text": "Buy it from http://localhost:8123/pay", "normalise": True})
+    assert event["instruction"]["normalisation"] == "ws-lower-v1"
+    assert event["instruction"]["normalised_hash"] == hash_instruction("buy it from /pay")
+    assert event["instruction"]["hash"] == hash_instruction("Buy it from http://localhost:8123/pay")
+
+
+def test_emit_report_hashes_the_message_and_has_no_payment() -> None:
+    data = json.loads(VECTOR.read_text(encoding="utf-8"))
+    envelopes: list[dict[str, Any]] = []
+    errors: list[dict[str, Any]] = []
+    client = HalvorClient(source_key=data["private_jwk"], environment="test", sink=envelopes.extend, on_error=errors.append, exit_hook=False)
+    client.emit_report(
+        instruction={"id": "ins_1", "text": "Buy one export"},
+        report={"body": "Done, paid once.", "payments_claimed": 1, "summary": "Paid once."},
+    )
+    client.flush(timeout=5)
+    client.close()
+    assert errors == []
+    (envelope,) = envelopes
+    event = envelope["event"]
+    assert event["type"] == "agent.reported"
+    assert event["ape_version"] == "0.2"
+    assert event["report"]["body_sha256"] == hash_instruction("Done, paid once.")
+    assert "payment" not in event
+    assert "Done, paid once." not in json.dumps(event)
+
+

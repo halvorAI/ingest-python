@@ -22,12 +22,12 @@ from typing import Any, Callable, Literal, Mapping
 import httpx
 
 from .context import current_context
-from .hash import evidence_sha256, hash_instruction
+from .hash import evidence_sha256, hash_instruction, normalise_instruction_text
 from .ids import new_event_id, now_utc
 from .redact import redact_deep, redact_text
 from .sign import sign_event
 from .spool import DEFAULT_MAX_AGE_S, DEFAULT_MAX_BYTES, Spool
-from .validate import validate_event
+from .validate import v02_fields_used, validate_event
 
 
 def _package_version() -> str:
@@ -51,7 +51,23 @@ API_KEY_PATTERN = re.compile(r"^hk_(test|live)_[0-9A-Za-z]{32}$")
 RETRY_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
 #: Statuses that fail the same way however often the batch is sent.
 FATAL_STATUSES = frozenset({400, 401, 403, 404, 405, 409, 410, 415, 422})
-INSTRUCTION_FIELDS = ("id", "hash", "summary", "channel", "issued_at", "tool_call_id")
+INSTRUCTION_FIELDS = (
+    "id",
+    "hash",
+    "summary",
+    "channel",
+    "issued_at",
+    "tool_call_id",
+    "normalised_hash",
+    "normalisation",
+)
+
+# The owner when the caller names none. APE v0.2 says so with `type: "unknown"` instead of the v0.1
+# placeholder `business` plus an `owner_type` label (halvorAI/halvorai-app#99).
+UNKNOWN_OWNER = {"id": "unattributed", "type": "unknown", "unknown_reason": "not_provided"}
+
+# Top-level APE v0.2 fields an `emit()` input may carry as they are.
+V02_PASS_THROUGH = ("attribution_gaps", "delivery", "report")
 
 
 def default_endpoint(api_key: str | None, environment: str) -> str:
@@ -268,6 +284,23 @@ class HalvorClient:
             self.notify({"code": "invalid_event", "message": str(exc) or "emit failed", "eventId": event_id})
             return event_id
 
+    def emit_report(
+        self,
+        *,
+        instruction: Mapping[str, Any],
+        report: Mapping[str, Any],
+        **rest: Any,
+    ) -> str:
+        """APE v0.2 `agent.reported`: what the agent told its owner about an instruction.
+
+        HalvorAI lines it up with the payments made for that instruction. Pass `body` in `report`
+        to have the message hashed here; the text itself is never sent.
+        """
+        out = {k: v for k, v in report.items() if k != "body"}
+        if "body_sha256" not in out and isinstance(report.get("body"), str):
+            out["body_sha256"] = hash_instruction(report["body"])
+        return self.emit({**rest, "type": "agent.reported", "instruction": instruction, "report": out})
+
     def stripe(self, event: Any) -> str | None:
         """
         Map a Stripe webhook event (after your own signature check) and queue it. Returns the
@@ -358,7 +391,7 @@ class HalvorClient:
         owner = (
             input_event.get("owner")
             or (ctx.get("owner") if ctx else None)
-            or {"id": "unattributed", "type": "business"}
+            or dict(UNKNOWN_OWNER)
         )
         event: dict[str, Any] = {
             "ape_version": "0.1",
@@ -371,32 +404,19 @@ class HalvorClient:
             "source": source,
             "agent": deepcopy(agent),
             "owner": deepcopy(owner),
-            "payment": input_event.get("payment"),
-            "payee": input_event.get("payee"),
         }
+        # An agent report (APE v0.2) is not a payment: it has no payment or payee.
+        if input_event.get("type") != "agent.reported":
+            event["payment"] = input_event.get("payment")
+            event["payee"] = input_event.get("payee")
         if instruction is not None:
             event["instruction"] = instruction
-        for key in ("instrument", "evidence", "related", "labels"):
+        for key in ("instrument", "evidence", "related", "labels", *V02_PASS_THROUGH):
             if input_event.get(key) is not None:
                 event[key] = input_event[key]
-        self._label_unknown_owner(event)
+        # v0.1 unless the event uses a v0.2 field, so plain events stay readable by v0.1 receivers.
+        event["ape_version"] = "0.2" if v02_fields_used(event) else "0.1"
         return event
-
-    @staticmethod
-    def _label_unknown_owner(event: dict[str, Any]) -> None:
-        """APE v0.1 requires `owner.type`, so an unknown owner still carries a placeholder type.
-
-        The label tells a reader the type is not a fact. A caller's own `owner_type` label wins.
-        (halvorAI/halvorai-app#99; APE v0.2 is expected to allow `owner.type: "unknown"`.)
-        """
-        owner = event.get("owner")
-        if not isinstance(owner, dict) or owner.get("id") != "unattributed":
-            return
-        labels = event.get("labels")
-        if labels is None:
-            event["labels"] = {"owner_type": "unknown"}
-        elif isinstance(labels, dict) and "owner_type" not in labels and len(labels) < 20:
-            event["labels"] = {**labels, "owner_type": "unknown"}
 
     @staticmethod
     def _build_instruction(
@@ -422,6 +442,12 @@ class HalvorClient:
             value = hash_value if key == "hash" else raw.get(key)
             if isinstance(value, str):
                 out[key] = value
+        # APE v0.2: `normalise=True` adds a hash of the ws-lower-v1 form, so two runs of one task match.
+        if "normalised_hash" in out:
+            out.setdefault("normalisation", "ws-lower-v1")
+        elif raw.get("normalise") is True and isinstance(raw.get("text"), str):
+            out["normalised_hash"] = hash_instruction(normalise_instruction_text(raw["text"]))
+            out["normalisation"] = "ws-lower-v1"
         return out
 
     def _redact_event(self, event: dict[str, Any]) -> None:
@@ -437,6 +463,8 @@ class HalvorClient:
             ("payee", "website"),
             ("payee", "resource_url"),
             ("instruction", "summary"),
+            ("report", "summary"),
+            ("delivery", "summary"),
         ):
             parent = event.get(path[0])
             if isinstance(parent, dict) and isinstance(parent.get(path[1]), str):

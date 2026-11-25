@@ -5,7 +5,7 @@
 <a href="https://pypi.org/project/halvorai-ingest/"><img height="16" alt="PyPI" src="https://img.shields.io/pypi/v/halvorai-ingest?style=flat-square&label=pypi&color=4A6100"></a>
 <a href="https://pypi.org/project/halvorai-ingest/"><img height="16" alt="Python versions" src="https://img.shields.io/pypi/pyversions/halvorai-ingest?style=flat-square&color=4A6100"></a>
 <a href="https://github.com/halvorAI/ingest-python/blob/main/LICENSE"><img height="16" alt="License" src="https://img.shields.io/badge/license-Apache--2.0-4A6100?style=flat-square"></a>
-<a href="https://github.com/halvorAI/ape-schema"><img height="16" alt="APE v0.1" src="https://img.shields.io/badge/APE-v0.1-C6F432?style=flat-square&labelColor=1C1C1C"></a>
+<a href="https://github.com/halvorAI/ape-schema"><img height="16" alt="APE v0.2" src="https://img.shields.io/badge/APE-v0.2-C6F432?style=flat-square&labelColor=1C1C1C"></a>
 </p>
 
 Signed, attributed payment events for AI agents. Each event records which agent paid, for which owner, on which instruction, with the network proof that came with the payment.
@@ -195,7 +195,8 @@ MPP and MCP adapters are in the Node.js SDK, [`@halvorai/ingest`](https://github
 | I want to | Read |
 | --- | --- |
 | Send my first event to the sandbox | [Quickstart](https://docs.halvorai.com/get-started/quickstart/) |
-| Look up an event field | [APE v0.1 fields](https://github.com/halvorAI/ape-schema/blob/main/docs/FIELDS.md) |
+| Look up an event field | [APE fields](https://github.com/halvorAI/ape-schema/blob/main/docs/FIELDS.md) |
+| Record what the agent told its owner | [`emit_report`](https://docs.halvorai.com/sdks/python/#agent-reports) |
 | Record MPP or MCP payments, or verify an evidence pack | [`@halvorai/ingest`](https://github.com/halvorAI/ingest-js) for Node.js |
 | Read all the guides | [docs.halvorai.com](https://docs.halvorai.com) |
 

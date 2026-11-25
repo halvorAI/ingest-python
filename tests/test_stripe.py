@@ -227,7 +227,7 @@ def test_emoji_names_fit_the_api_limit_and_sign() -> None:
     assert sent[0]["event"]["agent"]["name"] == "a" * 127
 
 
-def test_owner_type_is_labelled_unknown_when_the_metadata_has_an_owner_id_but_no_type() -> None:
+def test_owner_type_is_unknown_when_the_metadata_has_an_owner_id_but_no_type() -> None:
     """halvorAI/halvorai-app#99: a person-owned card must not be reported as a business."""
     event = load("payment_intent.succeeded.json")
     metadata = event["data"]["object"].setdefault("metadata", {})
@@ -235,8 +235,7 @@ def test_owner_type_is_labelled_unknown_when_the_metadata_has_an_owner_id_but_no
     metadata.pop("halvor_owner_type", None)
     mapped = map_stripe_event(event)
     assert mapped is not None
-    assert mapped["owner"] == {"id": "own_known", "type": "business"}
-    assert mapped["labels"] == {"owner_type": "unknown"}
+    assert mapped["owner"] == {"id": "own_known", "type": "unknown", "unknown_reason": "not_provided"}
 
     metadata["halvor_owner_type"] = "person"
     typed = map_stripe_event(event)
