@@ -236,3 +236,36 @@ async def test_async_transport_and_wrapper() -> None:
         await http.post(url, headers={"PAYMENT-SIGNATURE": encode_payment_header(PAYLOAD)})
         await http.aclose()
         check_round_trip(halvor, sent)
+
+
+def test_a_seller_without_context_says_what_it_cannot_see() -> None:
+    """APE v0.2 (halvorAI/halvorai-app#100): perspective payee, unknown owner, attribution gaps."""
+    mapped = map_payment_payload(PAYLOAD, "x402-server")
+    assert mapped is not None
+    assert mapped["source"] == {"adapter": "x402-server", "perspective": "payee"}
+    assert mapped["owner"] == {"id": "unattributed", "type": "unknown", "unknown_reason": "not_visible_to_observer"}
+    assert mapped["attribution_gaps"] == [
+        {"field": "agent", "reason": "not_visible_to_observer"},
+        {"field": "owner", "reason": "not_visible_to_observer"},
+        {"field": "instruction", "reason": "not_visible_to_observer"},
+        {"field": "mandate", "reason": "not_visible_to_observer"},
+    ]
+    (event,) = emit_all(mapped)
+    assert event["ape_version"] == "0.2"
+    assert validate_event(event) == []
+
+
+def test_a_buyer_without_context_did_not_provide_them() -> None:
+    mapped = map_payment_payload(PAYLOAD)
+    assert mapped is not None
+    assert mapped["source"] == {"adapter": "x402-client", "perspective": "payer"}
+    assert mapped["attribution_gaps"] == [
+        {"field": "agent", "reason": "not_provided"},
+        {"field": "owner", "reason": "not_provided"},
+    ]
+
+
+def test_a_buyer_with_context_has_no_gaps() -> None:
+    with agent_context(agent={"id": "agt_1"}, owner={"id": "own_1", "type": "person"}):
+        mapped = map_payment_payload(PAYLOAD)
+    assert mapped is not None and "attribution_gaps" not in mapped

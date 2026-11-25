@@ -11,7 +11,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from .canonical import canonicalize
 
 HEADER_TYP = "ape+jws"
-APE_VERSION = "0.1"
+APE_VERSIONS = ("0.1", "0.2")
+
+
+def _ape_version(event: Mapping[str, Any]) -> str:
+    """The event's `ape_version`; the JWS header `ape` must match it. Defaults to 0.1."""
+    version = event.get("ape_version")
+    return version if isinstance(version, str) and version in APE_VERSIONS else "0.1"
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -53,7 +59,7 @@ def sign_event(event: Mapping[str, Any], private_jwk: Mapping[str, Any]) -> str:
         "alg": "EdDSA",
         "kid": _source_id(event),
         "typ": HEADER_TYP,
-        "ape": APE_VERSION,
+        "ape": _ape_version(event),
     }
     # Compact JSON without spaces; key order matches sign.ts setProtectedHeader.
     header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
@@ -76,7 +82,7 @@ def verify_event(event: Mapping[str, Any], sig: str, public_jwk: Mapping[str, An
         if (
             header.get("alg") != "EdDSA"
             or header.get("typ") != HEADER_TYP
-            or header.get("ape") != APE_VERSION
+            or header.get("ape") != _ape_version(event)
             or header.get("kid") != _source_id(event)
         ):
             return False

@@ -1,0 +1,36 @@
+{
+  "ape_version": "0.2",
+  "id": "evt_01JD3C9Z8Y7X6W5V4T3S2R1Q0P",
+  "type": "agent.reported",
+  "occurred_at": "2026-11-24T12:00:09.020Z",
+  "environment": "test",
+  "source": {
+    "id": "src_01JD3B0A1B2C3D4E5F6G7H8J9K",
+    "sdk": "@halvorai/ingest@0.5.0",
+    "adapter": "custom",
+    "perspective": "payer"
+  },
+  "agent": {
+    "id": "agt_research_buyer",
+    "name": "Research buyer"
+  },
+  "owner": {
+    "id": "own_sample_person",
+    "type": "person"
+  },
+  "instruction": {
+    "id": "ins_buy_dataset",
+    "hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "report": {
+    "channel": "chat",
+    "summary": "Bought the Tidewater Data export for $0.25.",
+    "payments_claimed": 1,
+    "amount_claimed": {
+      "value": "25",
+      "unit": "minor",
+      "currency": "USD"
+    },
+    "body_sha256": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+  }
+}

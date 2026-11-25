@@ -39,21 +39,37 @@ def _host(url: str | None) -> str | None:
         return None
 
 
-def _attribution() -> dict[str, Any]:
-    """Agent and owner, but only when `agent_context` did not set them.
+def _attribution(adapter: str) -> dict[str, Any]:
+    """Agent and owner, but only when `agent_context` did not set them, and what is missing.
 
-    When it did, they are left out so the client fills the full context (name, framework,
-    country, KYC reference) when the event is emitted.
+    When the context set them, they are left out so the client fills the full context (name,
+    framework, country, KYC reference) when the event is emitted. A seller sees a wallet, not the
+    agent, its owner, the instruction or a mandate, so without a context it says those are not
+    visible to it (APE v0.2 `attribution_gaps`); a buyer without a context did not provide them.
     """
     ctx = current_context()
+    reason = "not_visible_to_observer" if adapter == "x402-server" else "not_provided"
     out: dict[str, Any] = {}
+    gaps: list[dict[str, str]] = []
     if not ctx or not ctx.get("agent"):
         # The payer wallet is never the agent id: it does not say which agent paid and would count
         # the payment as attributed. It stays in `instrument.wallet`.
         out["agent"] = {"id": "unattributed"}
+        gaps.append({"field": "agent", "reason": reason})
     if not ctx or not ctx.get("owner"):
-        out["owner"] = {"id": "unattributed", "type": "business"}
+        out["owner"] = {"id": "unattributed", "type": "unknown", "unknown_reason": reason}
+        gaps.append({"field": "owner", "reason": reason})
+    if adapter == "x402-server":
+        if not ctx or not ctx.get("instruction"):
+            gaps.append({"field": "instruction", "reason": reason})
+        gaps.append({"field": "mandate", "reason": reason})
+    if gaps:
+        out["attribution_gaps"] = gaps
     return out
+
+
+def _source(adapter: str) -> dict[str, str]:
+    return {"adapter": adapter, "perspective": "payee" if adapter == "x402-server" else "payer"}
 
 
 def _payment_id(network: str, *, nonce: str | None, tx_hash: str | None, event_id: str) -> str:
@@ -158,8 +174,8 @@ def map_payment_required(
     return {
         "id": event_id,
         "type": "payment.requested",
-        "source": {"adapter": adapter},
-        **_attribution(),
+        "source": _source(adapter),
+        **_attribution(adapter),
         "payment": payment,
         "payee": _payee(accept, resource, payee_override),
         "evidence": [],
@@ -194,8 +210,8 @@ def map_payment_payload(
     mapped: dict[str, Any] = {
         "id": event_id,
         "type": "payment.authorized",
-        "source": {"adapter": adapter},
-        **_attribution(),
+        "source": _source(adapter),
+        **_attribution(adapter),
         "payment": payment,
         "payee": _payee(accepted, resource, payee_override),
         "evidence": [
@@ -250,8 +266,8 @@ def map_settlement_response(
     mapped: dict[str, Any] = {
         "id": event_id,
         "type": "payment.settled" if success else "payment.failed",
-        "source": {"adapter": adapter},
-        **_attribution(),
+        "source": _source(adapter),
+        **_attribution(adapter),
         "payment": payment,
         "payee": _payee(merged, resource, payee_override),
         "evidence": [

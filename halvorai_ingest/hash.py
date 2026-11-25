@@ -16,3 +16,14 @@ def evidence_sha256(value: str | object) -> str:
     raw = value if isinstance(value, str) else canonicalize(value)
     digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     return f"sha256:{digest}"
+
+
+def normalise_instruction_text(text: str) -> str:
+    """`ws-lower-v1` (APE v0.2): NFC, lowercase, URL scheme, host and port removed (path kept),
+    whitespace collapsed to one space, trimmed. Matches the TypeScript SDK."""
+    import re
+    import unicodedata
+
+    out = unicodedata.normalize("NFC", text).lower()
+    out = re.sub(r"[a-z][a-z0-9+.-]*://[^\s/?#]+", "", out)
+    return re.sub(r"\s+", " ", out).strip()
